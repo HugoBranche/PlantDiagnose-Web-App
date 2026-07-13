@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings · PlantDiagnose</title>
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg></div>
+      <span class="logo-text">PlantDiagnose</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-link" data-page="dashboard.html" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Dashboard</span></a><a class="nav-link" data-page="diagnose.html" href="diagnose.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Diagnose Plant</span></a><a class="nav-link" data-page="history.html" href="history.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13a9 9 0 1 0 .5-4.5"/><path d="M12 7v5l4 2"/></svg><span>Diagnosis History</span></a><a class="nav-link" data-page="library.html" href="library.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Plant Diseases Library</span></a><a class="nav-link" data-page="botanists.html" href="botanists.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Nearby Botanists</span></a><a class="nav-link" data-page="recommendations.html" href="recommendations.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-1 .65-1.6 1.41-2.5A6 6 0 0 0 12 2a6 6 0 0 0-4.5 9.5c.76.9 1.23 1.5 1.41 2.5"/></svg><span>Recommendations</span></a><a class="nav-link" data-page="reports.html" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Reports & Analytics</span></a><a class="nav-link active" data-page="settings.html" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-logout">
+      <a href="index.html" class="nav-link" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span></a>
+    </div>
+  </aside>
+  <div class="main-col">
+
+    <header class="topnav">
+      <button class="mobile-menu-btn" id="mobileMenuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="search-wrap input-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" placeholder="Search plants, diseases, or reports...">
+      </div>
+      <div class="topnav-right">
+        <button class="btn btn-ghost btn-icon bell-wrap" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="bell-dot"></span>
+        </button>
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn">
+            <span class="avatar">JD</span>
+            <span class="text-sm" style="display:none" id="profileName">John Doe</span>
+          </button>
+          <div class="dropdown-menu">
+            <div class="dd-label">My Account</div>
+            <hr class="separator" style="margin:.25rem 0">
+            <a href="settings.html">Profile</a>
+            <a href="settings.html">Settings</a>
+            <a href="settings.html">Preferences</a>
+            <hr class="separator" style="margin:.25rem 0">
+            <button class="dd-danger" data-logout>Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Manage your account settings and preferences</p>
+      </div>
+
+      <div class="tabs-list" id="settingsTabs">
+        <button class="tab-btn active" data-panel="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Profile</span></button>
+        <button class="tab-btn" data-panel="notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifications</span></button>
+        <button class="tab-btn" data-panel="security">🔒<span>Security</span></button>
+        <button class="tab-btn" data-panel="preferences">🎨<span>Preferences</span></button>
+        <button class="tab-btn" data-panel="data">💾<span>Data</span></button>
+      </div>
+
+      <div class="tab-panel active" id="panel-profile">
+        <div class="card hidden" id="botanistProfileCard">
+          <div class="card-header"><div class="card-title">Botanist Listing</div><div class="card-description">Your specialty, location, and specializations shown on the Nearby Botanists page</div></div>
+          <div class="card-content">
+            <a href="botanist-profile.html" class="btn btn-outline">Edit Botanist Profile</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Profile Information</div><div class="card-description">Update your personal information and profile picture</div></div>
+          <div class="card-content space-y-4">
+            <div class="flex items-center gap-4">
+              <span class="avatar avatar-lg" id="profileAvatarLg">JD</span>
+              <div>
+                <button class="btn btn-outline btn-sm">Change Photo</button>
+                <p class="text-xs text-muted mt-1">JPG, PNG or GIF. Max size 2MB.</p>
+              </div>
+            </div>
+            <hr class="separator">
+            <div class="field"><label>Full Name</label><input type="text" id="settingsName"></div>
+            <div class="field"><label>Email Address</label><input type="email" id="settingsEmail" disabled></div>
+            <div class="field"><label>Phone Number</label><input type="tel" id="settingsPhone"></div>
+            <div class="field"><label>Location</label><input type="text" id="settingsLocation"></div>
+            <div class="field"><label>Bio</label><textarea id="settingsBio" placeholder="Tell us about yourself and your gardening experience..."></textarea></div>
+            <button class="btn btn-primary" id="saveProfileBtn">💾 Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-notifications">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Notification Preferences</div><div class="card-description">Manage how you receive notifications and updates</div></div>
+          <div class="card-content space-y-4">
+            
+            <div class="flex items-center justify-between">
+              <div><label style="margin-bottom:.15rem">Email Notifications</label><p class="text-sm text-muted">Receive email alerts for important updates</p></div>
+              <label class="switch"><input type="checkbox" id="notifEmail"><span class="track"></span></label>
+            </div>
+            <hr class="separator">
+            
+            <div class="flex items-center justify-between">
+              <div><label style="margin-bottom:.15rem">Push Notifications</label><p class="text-sm text-muted">Get push notifications on your devices</p></div>
+              <label class="switch"><input type="checkbox" id="notifPush"><span class="track"></span></label>
+            </div>
+            <hr class="separator">
+            
+            <div class="flex items-center justify-between">
+              <div><label style="margin-bottom:.15rem">Weekly Reports</label><p class="text-sm text-muted">Receive weekly summaries of your plant health</p></div>
+              <label class="switch"><input type="checkbox" id="notifWeekly"><span class="track"></span></label>
+            </div>
+            <hr class="separator">
+            
+            <div class="flex items-center justify-between">
+              <div><label style="margin-bottom:.15rem">Marketing Emails</label><p class="text-sm text-muted">Receive tips, news, and promotional offers</p></div>
+              <label class="switch"><input type="checkbox" id="notifMarketing"><span class="track"></span></label>
+            </div>
+            <hr class="separator">
+            
+            <button class="btn btn-primary" id="saveNotifsBtn">💾 Save Preferences</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-security">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Security Settings</div><div class="card-description">Manage your password and security preferences</div></div>
+          <div class="card-content space-y-4">
+            <div class="field"><label>Current Password</label><input type="password" id="currentPassword"></div>
+            <div class="field"><label>New Password</label><input type="password" id="newPassword"></div>
+            <div class="field"><label>Confirm New Password</label><input type="password" id="confirmNewPassword"></div>
+            <button class="btn btn-primary" id="updatePasswordBtn">Update Password</button>
+            <hr class="separator">
+            <h4 class="font-semibold">Two-Factor Authentication</h4>
+            <p class="text-sm text-muted">Add an extra layer of security to your account</p>
+            <button class="btn btn-outline">Enable 2FA</button>
+            <hr class="separator">
+            <h4 class="font-semibold">Active Sessions</h4>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between" style="background:#f9fafb;border-radius:var(--radius-sm);padding:.75rem">
+                <div><p class="text-sm font-medium">Chrome on MacBook Pro</p><p class="text-xs text-muted">San Francisco, CA • Active now</p></div>
+                <button class="btn btn-ghost btn-sm">Revoke</button>
+              </div>
+              <div class="flex items-center justify-between" style="background:#f9fafb;border-radius:var(--radius-sm);padding:.75rem">
+                <div><p class="text-sm font-medium">Safari on iPhone</p><p class="text-xs text-muted">San Francisco, CA • 2 hours ago</p></div>
+                <button class="btn btn-ghost btn-sm">Revoke</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-preferences">
+        <div class="card">
+          <div class="card-header"><div class="card-title">App Preferences</div><div class="card-description">Customize your app experience</div></div>
+          <div class="card-content space-y-4">
+            <div class="field"><label>Language</label><select id="prefLanguage"><option value="en">English</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option></select></div>
+            <div class="field"><label>Measurement Units</label><select id="prefUnits"><option value="imperial">Imperial (in, ft, °F)</option><option value="metric">Metric (cm, m, °C)</option></select></div>
+            <div class="field"><label>Theme</label><select id="prefTheme"><option value="light">Light</option><option value="dark">Dark</option><option value="system">System</option></select></div>
+            <button class="btn btn-primary" id="savePrefsBtn">💾 Save Preferences</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-data">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Data Management</div><div class="card-description">Export, backup, or delete your data</div></div>
+          <div class="card-content space-y-4">
+            <h4 class="font-semibold">Export Data</h4>
+            <p class="text-sm text-muted">Download a copy of your data including diagnoses, reports, and settings</p>
+            <button class="btn btn-outline">Export All Data</button>
+            <hr class="separator">
+            <h4 class="font-semibold">Storage Usage</h4>
+            <div class="text-sm space-y-4">
+              <div class="flex justify-between"><span>Images</span><span class="text-muted">245 MB</span></div>
+              <div class="flex justify-between"><span>Diagnoses</span><span class="text-muted">12 MB</span></div>
+              <div class="flex justify-between"><span>Reports</span><span class="text-muted">3 MB</span></div>
+              <hr class="separator">
+              <div class="flex justify-between font-medium"><span>Total</span><span>260 MB of 5 GB</span></div>
+            </div>
+            <hr class="separator">
+            <h4 class="font-semibold" style="color:#dc2626">Danger Zone</h4>
+            <div style="border:1px solid #fecaca;background:#fef2f2;border-radius:var(--radius-sm);padding:1rem">
+              <p class="text-sm font-medium" style="color:#7f1d1d">Delete Account</p>
+              <p class="text-sm mt-1" style="color:#991b1b">Permanently delete your account and all associated data</p>
+              <button class="btn btn-destructive btn-sm mt-3">Delete Account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script src="js/settings.js"></script>
+<script>
+document.querySelectorAll('#settingsTabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#settingsTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.panel).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

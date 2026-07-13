@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlantDiagnose · AI-Powered Plant Disease Diagnosis</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="landing">
+
+  <header class="landing-nav" id="landingNav">
+    <div class="landing-nav-inner">
+      <div class="landing-logo">
+        <div class="logo-mark" style="background:#10b981">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="16" height="16"><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg>
+        </div>
+        <span>PlantDiagnose</span>
+      </div>
+      <nav class="landing-nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#library">Library</a>
+      </nav>
+      <div class="landing-cta-group">
+        <a class="btn-nav-signin" href="login.html">Sign In</a>
+        <a class="btn-emerald" href="login.html">Get Started Free</a>
+      </div>
+      <button class="landing-mobile-toggle" id="mobileToggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="landing-mobile-menu" id="mobileMenu">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#library">Library</a>
+      <a class="btn-nav-signin" style="border:1px solid rgba(255,255,255,.2);border-radius:8px;text-align:center;padding:.6rem" href="login.html">Sign In</a>
+      <a class="btn-emerald" style="text-align:center" href="login.html">Get Started Free</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-eyebrow"><span class="dot"></span>AI-Powered Plant Health Platform</div>
+        <h1>Diagnose plant<br><em>disease</em> in<br>seconds.</h1>
+        <p class="sub">Upload a leaf photo. Our AI identifies disease, severity, and recommended treatment — instantly, with scientific precision.</p>
+        <div class="hero-ctas">
+          <a class="btn-hero-primary" href="login.html">Start Diagnosing Free →</a>
+          <a class="btn-hero-secondary" href="#how-it-works">See how it works</a>
+        </div>
+        <div class="hero-stats">
+          <div><div class="stat-num">50K+</div><div class="stat-lbl">Diagnoses</div></div>
+          <div><div class="stat-num">38</div><div class="stat-lbl">Diseases</div></div>
+          <div><div class="stat-num">94%</div><div class="stat-lbl">Accuracy</div></div>
+        </div>
+      </div>
+
+      <div class="hero-card-wrap">
+        <div class="hero-card">
+          <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Early%20blight%20on%20tomato%20leaves%20(7871930010).jpg?width=320" alt="Tomato leaf showing early blight lesions">
+          <div class="hero-card-body">
+            <div class="hero-scan-line">◎ Analysis complete</div>
+            <div>
+              <div class="hero-plant-name">Tomato — Early Blight</div>
+              <div class="hero-plant-sub">Alternaria solani detected</div>
+            </div>
+            <div>
+              <div class="hero-conf-row"><span style="color:rgba(255,255,255,.4)">Confidence</span><span class="num">94.2%</span></div>
+              <div class="hero-conf-bar"><span></span></div>
+            </div>
+            <div class="hero-tag-row">
+              <span class="hero-tag orange">Diseased</span>
+              <span class="hero-tag white">Moderate severity</span>
+            </div>
+          </div>
+          <div class="hero-pill">✓ Treatment plan ready</div>
+          <div class="hero-badge">38 diseases identified</div>
+          <div style="position:absolute;bottom:2px;right:8px;font-size:9px;color:rgba(255,255,255,.35)">Photo: Dwight Sipler, CC BY 2.0</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-fade"></div>
+  </section>
+
+  <section id="how-it-works" class="how-section">
+    <div class="container">
+      <div class="section-eyebrow">Process</div>
+      <h2 class="section-title">Three steps to a diagnosis</h2>
+      <div class="steps-grid">
+        <div>
+          <div class="step-top">
+            <span class="step-num">01</span>
+            <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M11 20A7 7 0 0 1 4 13c0-4 4-10 8-10s8 6 8 10a7 7 0 0 1-9 7z"/></svg></div>
+          </div>
+          <div class="step-title">Upload a photo</div>
+          <p class="step-desc">Take a close-up of the affected leaf or plant area. JPG, PNG, or WEBP all work.</p>
+        </div>
+        <div>
+          <div class="step-top">
+            <span class="step-num">02</span>
+            <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          </div>
+          <div class="step-title">AI analyses instantly</div>
+          <p class="step-desc">Our deep-learning model — trained on thousands of plant images — identifies the disease and confidence level in seconds.</p>
+        </div>
+        <div>
+          <div class="step-top">
+            <span class="step-num">03</span>
+            <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          </div>
+          <div class="step-title">Act on the result</div>
+          <p class="step-desc">Get the disease name, status, and confidence score. Save to your history, track treatment, and connect with nearby botanical experts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="library" class="marquee-section">
+    <div class="marquee-track" id="marqueeTrack"></div>
+  </section>
+
+  <section id="features" class="features-section">
+    <div class="container">
+      <div class="section-eyebrow">Features</div>
+      <h2 class="section-title" style="max-width:32rem">Everything you need to protect your plants</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-img-wrap">
+            <img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=600&h=400&fit=crop&auto=format" alt="AI scanning a plant leaf">
+            <div class="feature-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="4" y1="21" x2="20" y2="3"/></svg></div>
+          </div>
+          <div class="feature-body"><h3>Real-time AI diagnosis</h3><p>Our TensorFlow model processes leaf images against 38 disease classes with sub-second response times.</p></div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-img-wrap">
+            <img src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=600&h=400&fit=crop&auto=format" alt="Plant disease reference library">
+            <div class="feature-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+          </div>
+          <div class="feature-body"><h3>38-disease library</h3><p>Browse a curated database of plant diseases with symptoms, treatment guides, and prevention strategies.</p></div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-img-wrap">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop&auto=format" alt="Analytics dashboard">
+            <div class="feature-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          </div>
+          <div class="feature-body"><h3>History &amp; analytics</h3><p>Track all your diagnoses over time, monitor plant health trends, and export reports for your records.</p></div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-img-wrap">
+            <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&h=400&fit=crop&auto=format" alt="Botanist expert consultation">
+            <div class="feature-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          </div>
+          <div class="feature-body"><h3>Nearby botanists</h3><p>Connect with verified agricultural experts and plant pathologists in your area for professional advice.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="final-cta-inner">
+      <div class="section-eyebrow" style="color:#10b981">Get started today</div>
+      <h2>Your plants deserve<br><em>better care.</em></h2>
+      <p>Join thousands of growers using AI to catch disease early and keep their plants healthy.</p>
+      <div class="final-cta-ctas">
+        <a class="btn-hero-primary" href="login.html">Create Free Account →</a>
+        <a class="btn-hero-secondary" href="login.html">Sign In</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <div class="logo-mark" style="width:24px;height:24px;background:#10b981;border-radius:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="14" height="14"><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg>
+        </div>
+        <span>PlantDiagnose</span>
+      </div>
+      <p class="footer-copy">© 2026 PlantDiagnose.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/landing.js"></script>
+</body>
+</html>

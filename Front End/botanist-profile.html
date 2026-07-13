@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complete Your Profile · PlantDiagnose</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-box" style="max-width:520px">
+      <div class="login-logo-wrap">
+        <div class="login-logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg>
+        </div>
+        <h1>PlantDiagnose</h1>
+        <p>Set up your botanist profile so plant owners near you can find and contact you</p>
+      </div>
+
+      <div id="profileError" class="hidden alert alert-red" style="margin-bottom:1rem">
+        <div><div class="alert-title">Error</div><div id="profileErrorMsg"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Your Botanist Profile</div>
+          <div class="card-description">This is what plant owners will see on the Nearby Botanists page</div>
+        </div>
+        <div class="card-content">
+          <form id="profileForm" class="space-y-4">
+            <div class="field">
+              <label for="specialty">Primary Specialty</label>
+              <select id="specialty" required>
+                <option value="">Select a specialty</option>
+                <option value="Plant Pathology">Plant Pathology</option>
+                <option value="Agricultural Science">Agricultural Science</option>
+                <option value="Horticulture">Horticulture</option>
+                <option value="Plant Nutrition">Plant Nutrition</option>
+                <option value="Organic Farming">Organic Farming</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="specializations">Specializations (comma-separated)</label>
+              <input id="specializations" type="text" placeholder="Fungal Diseases, Vegetable Crops, Organic Solutions">
+            </div>
+            <div class="field">
+              <label for="experienceYears">Years of Experience</label>
+              <input id="experienceYears" type="number" min="0" placeholder="10">
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" type="tel" placeholder="+254 700 000 000">
+            </div>
+            <div class="field">
+              <label for="bio">Short Bio</label>
+              <textarea id="bio" rows="3" placeholder="A sentence or two about your background"></textarea>
+            </div>
+            <div class="field">
+              <label for="location">Location (shown to users)</label>
+              <input id="location" type="text" placeholder="e.g. Green Valley Nursery, Nairobi" required>
+            </div>
+            <div class="field">
+              <button type="button" class="btn btn-outline btn-block" id="captureLocationBtn">📍 Use My Current Location</button>
+              <p class="text-sm text-muted mt-1" id="coordsStatus">Coordinates not captured yet — required so users can see how far away you are.</p>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="profileSubmit">Save & Continue</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/botanist-profile.js"></script>
+</body>
+</html>

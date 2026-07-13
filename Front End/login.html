@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In · PlantDiagnose</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-box">
+      <div class="login-logo-wrap">
+        <div class="login-logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg>
+        </div>
+        <h1>PlantDiagnose</h1>
+        <p>AI-Powered Plant Disease Diagnosis</p>
+      </div>
+
+      <div class="tabs-list grid" style="grid-template-columns:1fr 1fr" id="authTabs">
+        <button class="tab-btn active" data-panel="signin">Sign In</button>
+        <button class="tab-btn" data-panel="signup">Sign Up</button>
+      </div>
+
+      <div id="authError" class="hidden alert alert-red" style="margin-bottom:1rem">
+        <div><div class="alert-title">Error</div><div id="authErrorMsg"></div></div>
+      </div>
+
+      <div class="tab-panel active" id="panel-signin">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Welcome Back</div>
+            <div class="card-description">Sign in to your account to continue</div>
+          </div>
+          <div class="card-content">
+            <form id="signinForm" class="space-y-4">
+              <div class="field"><label for="email">Email</label><input id="email" type="email" placeholder="john@example.com" required></div>
+              <div class="field"><label for="password">Password</label><input id="password" type="password" placeholder="••••••••" required></div>
+              <div class="flex items-center justify-between">
+                <div class="checkbox-row"><input type="checkbox" id="remember"><label for="remember" style="margin:0">Remember me</label></div>
+                <button type="button" class="btn btn-link">Forgot password?</button>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block" id="signinSubmit">Sign In</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-signup">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Create Account</div>
+            <div class="card-description">Get started with PlantDiagnose today</div>
+          </div>
+          <div class="card-content">
+            <form id="signupForm" class="space-y-4">
+              <div class="field">
+                <label>I am signing up as a...</label>
+                <div class="flex gap-3">
+                  <label class="flex items-center gap-2" style="font-weight:400">
+                    <input type="radio" name="role" value="user" checked> Plant Owner
+                  </label>
+                  <label class="flex items-center gap-2" style="font-weight:400">
+                    <input type="radio" name="role" value="botanist"> Botanist
+                  </label>
+                </div>
+              </div>
+              <div class="field"><label for="name">Full Name</label><input id="name" type="text" placeholder="John Doe" required></div>
+              <div class="field"><label for="signup-email">Email</label><input id="signup-email" type="email" placeholder="john@example.com" required></div>
+              <div class="field"><label for="signup-password">Password</label><input id="signup-password" type="password" placeholder="••••••••" required></div>
+              <div class="field"><label for="confirm-password">Confirm Password</label><input id="confirm-password" type="password" placeholder="••••••••" required></div>
+              <button type="submit" class="btn btn-primary btn-block" id="signupSubmit">Create Account</button>
+            </form>
+          </div>
+          <div class="card-footer">By signing up, you agree to our Terms of Service and Privacy Policy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
