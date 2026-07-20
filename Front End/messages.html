@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages · PlantDiagnose</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* Scoped to this page only — a simple two-pane chat layout built from
+     the existing card/flex utility classes already used elsewhere. */
+  .messages-layout { display: flex; gap: 1.25rem; height: calc(100vh - 160px); min-height: 420px; }
+  .conversation-list { width: 320px; flex-shrink: 0; overflow-y: auto; }
+  .conversation-item { display: flex; gap: .75rem; padding: .75rem; border-radius: var(--radius-sm); cursor: pointer; align-items: flex-start; }
+  .conversation-item:hover { background: var(--muted, #f4f4f5); }
+  .conversation-item.active { background: var(--muted, #f4f4f5); }
+  .conversation-item .name-row { display: flex; justify-content: space-between; gap: .5rem; }
+  .conversation-item .preview { font-size: .8rem; color: var(--text-muted, #6b7280); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .thread-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .thread-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .6rem; }
+  .bubble { max-width: 70%; padding: .55rem .85rem; border-radius: 1rem; font-size: .9rem; line-height: 1.35; }
+  .bubble.mine { align-self: flex-end; background: #16a34a; color: #fff; border-bottom-right-radius: .25rem; }
+  .bubble.theirs { align-self: flex-start; background: var(--muted, #f4f4f5); border-bottom-left-radius: .25rem; }
+  .bubble-time { font-size: .7rem; opacity: .7; margin-top: .2rem; }
+  .thread-composer { display: flex; gap: .5rem; padding: .75rem; border-top: 1px solid var(--border, #e5e7eb); }
+  .thread-composer textarea { flex: 1; resize: none; }
+  .empty-thread { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted, #6b7280); text-align: center; padding: 2rem; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M7 7l10 10M7 17l10-10"/></svg></div>
+      <span class="logo-text">PlantDiagnose</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-link" data-page="dashboard.html" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Dashboard</span></a><a class="nav-link" data-page="diagnose.html" href="diagnose.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Diagnose Plant</span></a><a class="nav-link" data-page="history.html" href="history.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13a9 9 0 1 0 .5-4.5"/><path d="M12 7v5l4 2"/></svg><span>Diagnosis History</span></a><a class="nav-link" data-page="library.html" href="library.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Plant Diseases Library</span></a><a class="nav-link" data-page="botanists.html" href="botanists.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Nearby Botanists</span></a><a class="nav-link active" data-page="messages.html" href="messages.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messages</span></a><a class="nav-link" data-page="recommendations.html" href="recommendations.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-1 .65-1.6 1.41-2.5A6 6 0 0 0 12 2a6 6 0 0 0-4.5 9.5c.76.9 1.23 1.5 1.41 2.5"/></svg><span>Recommendations</span></a><a class="nav-link" data-page="reports.html" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Reports & Analytics</span></a><a class="nav-link" data-page="settings.html" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-logout">
+      <a href="index.html" class="nav-link" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span></a>
+    </div>
+  </aside>
+  <div class="main-col">
+
+    <header class="topnav">
+      <button class="mobile-menu-btn" id="mobileMenuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="search-wrap input-icon-wrap"></div>
+      <div class="topnav-right">
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn">
+            <span class="avatar">JD</span>
+            <span class="text-sm" style="display:none" id="profileName">John Doe</span>
+          </button>
+          <div class="dropdown-menu">
+            <div class="dd-label">My Account</div>
+            <hr class="separator" style="margin:.25rem 0">
+            <a href="settings.html">Profile</a>
+            <a href="settings.html">Settings</a>
+            <hr class="separator" style="margin:.25rem 0">
+            <button class="dd-danger" data-logout>Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+
+      <h1>Messages</h1>
+      <p class="text-muted">Conversations between you and botanists on PlantDiagnose.</p>
+
+      <div class="messages-layout mt-4">
+        <div class="card conversation-list" id="conversationList">
+          <!-- filled by messages.js -->
+        </div>
+        <div class="card thread-panel">
+          <div class="thread-messages" id="threadMessages">
+            <div class="empty-thread" id="emptyThread">Select a conversation, or start one from a botanist's profile on the Nearby Botanists page.</div>
+          </div>
+          <div class="thread-composer hidden" id="threadComposer">
+            <textarea id="replyInput" rows="1" placeholder="Type a message..."></textarea>
+            <button class="btn btn-primary" id="sendReplyBtn">Send</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script src="js/messages.js"></script>
+
+</body>
+</html>

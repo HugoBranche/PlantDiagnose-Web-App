@@ -45,13 +45,72 @@ document.addEventListener("DOMContentLoaded", () => {
   menuBtn?.addEventListener("click", openSidebar);
   overlay?.addEventListener("click", closeSidebar);
 
-  // --- Highlight active nav link based on current page filename ---
+  // --- Ensure the Messages link is present in the sidebar on every dashboard page ---
   const current = window.location.pathname.split("/").pop() || "dashboard.html";
+  const sidebarNav = document.querySelector(".sidebar-nav");
+  if (sidebarNav && !sidebarNav.querySelector('[data-page="messages.html"]')) {
+    const messagesLink = document.createElement("a");
+    messagesLink.className = "nav-link";
+    messagesLink.dataset.page = "messages.html";
+    messagesLink.href = "messages.html";
+    messagesLink.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messages</span>';
+
+    const insertBeforeEl = sidebarNav.querySelector('[data-page="recommendations.html"]')
+      || sidebarNav.querySelector('[data-page="reports.html"]')
+      || sidebarNav.querySelector('[data-page="settings.html"]');
+
+    if (insertBeforeEl) {
+      sidebarNav.insertBefore(messagesLink, insertBeforeEl);
+    } else {
+      sidebarNav.appendChild(messagesLink);
+    }
+  }
+
+  const messagesLink = sidebarNav?.querySelector('[data-page="messages.html"]');
+  if (messagesLink) {
+    const badge = messagesLink.querySelector('.nav-badge') || document.createElement('span');
+    badge.className = 'nav-badge';
+    badge.textContent = '•';
+    badge.style.display = 'none';
+    badge.style.marginLeft = 'auto';
+    badge.style.width = '8px';
+    badge.style.height = '8px';
+    badge.style.borderRadius = '999px';
+    badge.style.background = '#16a34a';
+    if (!messagesLink.querySelector('.nav-badge')) {
+      messagesLink.appendChild(badge);
+    }
+
+    async function refreshMessagesBadge() {
+      try {
+        const data = await apiFetch('/api/consultations');
+        const hasUnread = Array.isArray(data?.conversations)
+          && data.conversations.some((c) => c.status === 'new' && !c.lastMessageFromMe);
+        badge.style.display = hasUnread ? 'inline-block' : 'none';
+      } catch {
+        badge.style.display = 'none';
+      }
+    }
+
+    refreshMessagesBadge();
+    window.setInterval(refreshMessagesBadge, 10000);
+  }
+
+  // --- Highlight active nav link based on current page filename ---
   document.querySelectorAll(".nav-link[data-page]").forEach((link) => {
     if (link.dataset.page === current) {
       link.classList.add("active");
     }
   });
+
+  if (user?.role === "admin" && !document.querySelector('.nav-link[data-page="admin.html"]')) {
+    const adminLink = document.createElement("a");
+    adminLink.className = "nav-link";
+    adminLink.dataset.page = "admin.html";
+    adminLink.href = "admin.html";
+    adminLink.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.4-2.8 7.8-7 9-4.2-1.2-7-4.6-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg><span>Admin</span>';
+    sidebarNav?.appendChild(adminLink);
+  }
 
   // --- Profile dropdown ---
   const dropdown = document.getElementById("profileDropdown");

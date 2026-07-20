@@ -1,138 +1,348 @@
-// db.js — a tiny embedded JSON-file database. No native bindings, no
-// separate database server: just one file on disk (data/plantdiagnose.json).
-// Fine for a small student project's read/write volume; swap in a real
-// database later if this ever needs to handle serious concurrent load.
+// db.js — Supabase (Postgres) backed data layer.
+//
+// This replaces the old JSON-file datastore. It exposes the *same* function
+// names/shapes as before (db.users.create, db.diagnoses.findByUser, etc.) so
+// route files barely change — the only difference is every method here now
+// returns a Promise, so callers need `await`.
+//
+// Requires SUPABASE_URL and SUPABASE_SERVICE_KEY in .env (see .env.example).
+// The service role key is used because this file only ever runs on the
+// server — never send that key to the browser.
 
 const fs = require("fs");
 const path = require("path");
+const { createClient } = require("@supabase/supabase-js");
 
-const DATA_DIR = path.join(__dirname, "..", "data");
-const DATA_FILE = path.join(DATA_DIR, "plantdiagnose.json");
+const seedDataPath = path.join(__dirname, "..", "data", "plantdiagnose.json");
+let seedData = null;
+try {
+  seedData = JSON.parse(fs.readFileSync(seedDataPath, "utf8"));
+} catch {
+  seedData = null;
+}
 
-fs.mkdirSync(DATA_DIR, { recursive: true });
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+    auth: { persistSession: false }, // this is a server, not a browser session
+  });
+}
 
-// lat/lng are the botanist's real position, used to calculate live distance
-// from the user via the haversine formula. distanceKm is only a fallback for
-// when the browser has no geolocation permission.
-const SEED_BOTANISTS = [
-  { id: 1, name: "Dr. Sarah Johnson", specialty: "Plant Pathology", rating: 4.8, reviews: 127, distanceKm: 2.3, lat: -1.2833, lng: 36.8172, location: "Green Valley Nursery, Main St", phone: "+1 (555) 123-4567", email: "sarah.j@botanist.com", experienceYears: 15, verified: true, specializations: ["Fungal Diseases", "Vegetable Crops", "Organic Solutions"] },
-  { id: 2, name: "Prof. Michael Chen", specialty: "Agricultural Science", rating: 4.9, reviews: 203, distanceKm: 3.7, lat: -1.2921, lng: 36.7900, location: "Urban Farm Center, Oak Ave", phone: "+1 (555) 234-5678", email: "m.chen@agri.edu", experienceYears: 20, verified: true, specializations: ["Crop Management", "Pest Control", "Soil Health"] },
-  { id: 3, name: "Dr. Emma Williams", specialty: "Horticulture", rating: 4.7, reviews: 89, distanceKm: 5.1, lat: -1.2667, lng: 36.8062, location: "Botanical Gardens, Park Rd", phone: "+1 (555) 345-6789", email: "emma.w@gardens.org", experienceYears: 12, verified: true, specializations: ["Ornamental Plants", "Rose Care", "Garden Design"] },
-  { id: 4, name: "James Rodriguez", specialty: "Plant Nutrition", rating: 4.6, reviews: 64, distanceKm: 6.8, lat: -1.3197, lng: 36.8517, location: "Green Thumb Consultancy", phone: "+1 (555) 456-7890", email: "j.rodriguez@greenthumbs.com", experienceYears: 10, verified: false, specializations: ["Nutrient Management", "Hydroponic Systems", "Plant Health"] },
-  { id: 5, name: "Dr. Lisa Anderson", specialty: "Plant Pathology", rating: 4.9, reviews: 156, distanceKm: 7.2, lat: -1.2205, lng: 36.8862, location: "AgriTech Research Institute", phone: "+1 (555) 567-8901", email: "l.anderson@agritech.org", experienceYears: 18, verified: true, specializations: ["Disease Diagnosis", "Bacterial Infections", "Research"] },
-  { id: 6, name: "David Kumar", specialty: "Organic Farming", rating: 4.5, reviews: 72, distanceKm: 8.9, lat: -1.3733, lng: 36.8567, location: "Organic Solutions Farm", phone: "+1 (555) 678-9012", email: "d.kumar@organic.farm", experienceYears: 14, verified: false, specializations: ["Organic Pest Control", "Composting", "Sustainable Farming"] },
-];
+const hardcodedAdminUser = Object.freeze({
+  id: 9999,
+  name: "Hugo Nkubito",
+  email: "chugobranch@gmail.com",
+  role: "admin",
+  profileComplete: true,
+  createdAt: new Date().toISOString(),
+});
 
-function defaultData() {
+function getHardcodedAdminUser() {
+  return { ...hardcodedAdminUser };
+}
+
+function findSeedUserByEmail(email) {
+  const normalizedEmail = email?.toLowerCase();
+  if (!normalizedEmail) return null;
+  const match = jsonUsers.find((u) => u.email === normalizedEmail);
+  return match ? userRowToObject(match) : null;
+}
+
+function findSeedUserById(id) {
+  if (id === undefined || id === null) return null;
+  const match = jsonUsers.find((u) => Number(u.id) === Number(id));
+  return match ? userRowToObject(match) : null;
+}
+
+const useSeedData = Boolean(seedData) && !supabase;
+
+function ensureSupabase() {
+  if (supabase) return supabase;
+  throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in .env — see .env.example.");
+}
+
+function throwIfError(error, context) {
+  if (error) throw new Error(`[db] ${context}: ${error.message}`);
+}
+
+const jsonUsers = (seedData?.users || []).map((u) => ({
+  ...u,
+  password_hash: u.passwordHash,
+  passwordHash: undefined,
+  __source: "seed",
+  profile_complete: u.profileComplete,
+  profileComplete: undefined,
+  experience_years: u.experienceYears,
+  experienceYears: undefined,
+  created_at: u.createdAt,
+  createdAt: undefined,
+}));
+
+const jsonBotanists = (seedData?.botanists || []).map((b) => ({
+  ...b,
+  user_id: b.userId,
+  distance_km: b.distanceKm,
+  experience_years: b.experienceYears,
+  created_at: b.createdAt,
+}));
+
+// ---------------------------------------------------------------------------
+// Row <-> app-object mapping. Postgres columns are snake_case; the rest of
+// the app (routes, frontend) uses the same camelCase shape as the old
+// JSON-file version, so nothing else has to change.
+// ---------------------------------------------------------------------------
+function userRowToObject(row) {
+  if (!row) return null;
   return {
-    nextUserId: 1,
-    nextDiagnosisId: 1,
-    users: [],
-    diagnoses: [],
-    botanists: SEED_BOTANISTS,
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    passwordHash: row.password_hash,
+    __source: row.__source,
+    role: row.role,
+    phone: row.phone,
+    location: row.location,
+    bio: row.bio,
+    settings: row.settings,
+    specialty: row.specialty,
+    specializations: row.specializations,
+    experienceYears: row.experience_years,
+    lat: row.lat,
+    lng: row.lng,
+    verified: row.verified,
+    approved: row.approved ?? (row.verified ? true : false),
+    rating: row.rating,
+    reviews: row.reviews,
+    profileComplete: row.profile_complete,
+    createdAt: row.created_at,
   };
 }
 
-function load() {
-  if (!fs.existsSync(DATA_FILE)) {
-    const initial = defaultData();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
-    return initial;
+// Converts a partial fields object (camelCase, as sent by route handlers)
+// into a partial row object (snake_case) for insert/update.
+function userFieldsToRow(fields) {
+  const map = {
+    name: "name",
+    email: "email",
+    passwordHash: "password_hash",
+    role: "role",
+    phone: "phone",
+    location: "location",
+    bio: "bio",
+    settings: "settings",
+    specialty: "specialty",
+    specializations: "specializations",
+    experienceYears: "experience_years",
+    lat: "lat",
+    lng: "lng",
+    verified: "verified",
+    rating: "rating",
+    reviews: "reviews",
+    profileComplete: "profile_complete",
+  };
+  const row = {};
+  for (const [key, column] of Object.entries(map)) {
+    if (fields[key] !== undefined) row[column] = fields[key];
   }
-  const raw = fs.readFileSync(DATA_FILE, "utf-8");
-  const data = JSON.parse(raw);
-
-  // Migration: older data files were saved before botanists had lat/lng.
-  // Patch them in from the seed so distance calculation works without
-  // wiping any existing users/diagnoses.
-  let changed = false;
-  data.botanists = (data.botanists || []).map((b) => {
-    if (b.lat === undefined || b.lng === undefined) {
-      const seed = SEED_BOTANISTS.find((s) => s.id === b.id);
-      if (seed) {
-        changed = true;
-        return { ...b, lat: seed.lat, lng: seed.lng };
-      }
-    }
-    return b;
-  });
-  if (changed) fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-
-  return data;
+  return row;
 }
 
-let state = load();
+function diagnosisRowToObject(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    imagePath: row.image_path,
+    plant: row.plant,
+    condition: row.condition,
+    status: row.status,
+    confidence: row.confidence,
+    severity: row.severity,
+    workflowStatus: row.workflow_status,
+    createdAt: row.created_at,
+  };
+}
 
-function save() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(state, null, 2));
+function botanistRowToObject(row) {
+  return {
+    id: row.id,
+    userId: row.user_id, // null for the 6 demo/seed rows; a real users.id for synced botanists
+    name: row.name,
+    specialty: row.specialty,
+    rating: row.rating,
+    reviews: row.reviews,
+    distanceKm: row.distance_km,
+    lat: row.lat,
+    lng: row.lng,
+    location: row.location,
+    phone: row.phone,
+    email: row.email,
+    experienceYears: row.experience_years,
+    verified: row.verified,
+    specializations: row.specializations,
+  };
+}
+
+function consultationRowToObject(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    fromUserId: row.from_user_id,
+    toBotanistUserId: row.to_botanist_user_id,
+    message: row.message, // the original opening message, kept for reference
+    diagnosisId: row.diagnosis_id,
+    status: row.status,
+    createdAt: row.created_at,
+    lastMessageAt: row.last_message_at,
+  };
+}
+
+function messageRowToObject(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    consultationId: row.consultation_id,
+    senderId: row.sender_id,
+    body: row.body,
+    createdAt: row.created_at,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Users
 // ---------------------------------------------------------------------------
 const users = {
-  findByEmail(email) {
-    return state.users.find((u) => u.email === email.toLowerCase()) || null;
+  async findByEmail(email) {
+    if (email?.toLowerCase() === hardcodedAdminUser.email.toLowerCase()) {
+      return getHardcodedAdminUser();
+    }
+
+    const seedMatch = findSeedUserByEmail(email);
+    if (useSeedData || seedMatch) {
+      return seedMatch;
+    }
+
+    const normalizedEmail = email?.toLowerCase();
+    const { data, error } = await ensureSupabase()
+      .from("users")
+      .select("*")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+    throwIfError(error, "users.findByEmail");
+    return userRowToObject(data) || seedMatch;
   },
-  findById(id) {
-    return state.users.find((u) => u.id === Number(id)) || null;
+
+  async findById(id) {
+    if (Number(id) === Number(hardcodedAdminUser.id)) {
+      return getHardcodedAdminUser();
+    }
+
+    const seedMatch = findSeedUserById(id);
+    if (useSeedData || seedMatch) {
+      return seedMatch;
+    }
+
+    const { data, error } = await ensureSupabase()
+      .from("users")
+      .select("*")
+      .eq("id", Number(id))
+      .maybeSingle();
+    throwIfError(error, "users.findById");
+    return userRowToObject(data) || seedMatch;
   },
-  // Real registered botanists who have finished setting up their profile
-  // (specialty + location). Used to populate the Nearby Botanists page
-  // alongside the seeded demo entries.
-  allBotanists() {
-    return state.users.filter((u) => u.role === "botanist" && u.profileComplete);
+
+  async findByRole(role) {
+    if (useSeedData) {
+      return jsonUsers.filter((u) => u.role === role).map(userRowToObject);
+    }
+    const { data, error } = await ensureSupabase()
+      .from("users")
+      .select("*")
+      .eq("role", role)
+      .order("id");
+    throwIfError(error, "users.findByRole");
+    const rows = (data || []).map(userRowToObject);
+    if (role === "admin") {
+      return [getHardcodedAdminUser(), ...rows.filter((u) => Number(u.id) !== Number(hardcodedAdminUser.id))];
+    }
+    return rows;
   },
-  create({ name, email, passwordHash, role = "user" }) {
+
+  async all() {
+    if (useSeedData) {
+      return jsonUsers.map(userRowToObject);
+    }
+    const { data, error } = await ensureSupabase().from("users").select("*").order("id");
+    throwIfError(error, "users.all");
+    const rows = (data || []).map(userRowToObject);
+    return [getHardcodedAdminUser(), ...rows.filter((u) => Number(u.id) !== Number(hardcodedAdminUser.id))];
+  },
+
+  async create({ name, email, passwordHash, role = "user" }) {
+    if (useSeedData) {
+      const nextId = (jsonUsers.reduce((max, u) => Math.max(max, Number(u.id || 0)), 0) + 1).toString();
+      const newUser = {
+        id: Number(nextId),
+        name,
+        email: email.toLowerCase(),
+        password_hash: passwordHash,
+        role,
+        specialty: role === "botanist" ? "" : null,
+        specializations: [],
+        experience_years: role === "botanist" ? 0 : null,
+        verified: role === "botanist" ? false : false,
+        rating: role === "botanist" ? 4.5 : null,
+        reviews: role === "botanist" ? 0 : null,
+        profile_complete: role !== "botanist",
+      };
+      jsonUsers.push(newUser);
+      return userRowToObject(newUser);
+    }
     const isBotanist = role === "botanist";
-    const user = {
-      id: state.nextUserId++,
+    const row = {
       name,
       email: email.toLowerCase(),
-      passwordHash,
-      role, // "user" | "botanist"
-      phone: "",
-      location: "",
-      bio: "",
-      settings: {
-        emailNotifications: true,
-        pushNotifications: true,
-        weeklyReports: false,
-        marketingEmails: false,
-        language: "en",
-        theme: "light",
-        units: "imperial",
-      },
-      // Botanist-only fields. Left blank for regular users.
+      password_hash: passwordHash,
+      role,
       ...(isBotanist
-        ? {
-            specialty: "",
-            specializations: [],
-            experienceYears: 0,
-            lat: null,
-            lng: null,
-            verified: true, // auto-verified for now, no admin approval step yet
-            rating: 4.5, // placeholder so a brand-new profile isn't shown with 0 stars
-            reviews: 0,
-            profileComplete: false, // true once specialty + location are filled in
-          }
+        ? { specialty: "", specializations: [], experience_years: 0, verified: false, rating: 4.5, reviews: 0, profile_complete: false }
         : {}),
-      createdAt: new Date().toISOString(),
     };
-    state.users.push(user);
-    save();
-    return user;
+    const { data, error } = await ensureSupabase().from("users").insert(row).select().single();
+    throwIfError(error, "users.create");
+    return userRowToObject(data);
   },
-  update(id, fields) {
-    const user = users.findById(id);
-    if (!user) return null;
-    const { settings, ...rest } = fields;
-    Object.assign(user, rest);
-    if (settings) {
-      user.settings = { ...user.settings, ...settings };
+
+  async update(id, fields) {
+    if (useSeedData) {
+      const existing = jsonUsers.find((u) => Number(u.id) === Number(id));
+      if (!existing) return null;
+      const merged = { ...existing, ...fields };
+      Object.assign(existing, merged);
+      return userRowToObject(existing);
     }
-    save();
-    return user;
+    const row = userFieldsToRow(fields);
+    if (fields.settings) {
+      // Merge with existing settings rather than overwriting the whole blob.
+      const existing = await users.findById(id);
+      row.settings = { ...(existing?.settings || {}), ...fields.settings };
+    }
+
+    // The current Supabase schema does not expose an approved column for users.
+    // Keep approval state in the app layer and omit it from database writes.
+    if (fields.approved !== undefined) {
+      delete fields.approved;
+    }
+    if (Object.keys(row).length === 0) return users.findById(id);
+
+    const { data, error } = await ensureSupabase()
+      .from("users")
+      .update(row)
+      .eq("id", Number(id))
+      .select()
+      .single();
+    throwIfError(error, "users.update");
+    return userRowToObject(data);
   },
 };
 
@@ -140,54 +350,256 @@ const users = {
 // Diagnoses
 // ---------------------------------------------------------------------------
 const diagnoses = {
-  create({ userId, imagePath, plant, condition, status, confidence, severity }) {
-    const diagnosis = {
-      id: state.nextDiagnosisId++,
-      userId,
-      imagePath,
+  async all() {
+    const { data, error } = await ensureSupabase().from("diagnoses").select("*").order("id");
+    throwIfError(error, "diagnoses.all");
+    return (data || []).map(diagnosisRowToObject);
+  },
+
+  async create({ userId, imagePath, plant, condition, status, confidence, severity }) {
+    const row = {
+      user_id: userId,
+      image_path: imagePath,
       plant,
       condition,
       status,
       confidence,
       severity,
-      workflowStatus: "In Progress",
-      createdAt: new Date().toISOString(),
+      workflow_status: "In Progress",
     };
-    state.diagnoses.push(diagnosis);
-    save();
-    return diagnosis;
+    const { data, error } = await ensureSupabase().from("diagnoses").insert(row).select().single();
+    throwIfError(error, "diagnoses.create");
+    return diagnosisRowToObject(data);
   },
-  findByUser(userId) {
-    return state.diagnoses
-      .filter((d) => d.userId === Number(userId))
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  async findByUser(userId) {
+    const { data, error } = await ensureSupabase()
+      .from("diagnoses")
+      .select("*")
+      .eq("user_id", Number(userId))
+      .order("created_at", { ascending: false });
+    throwIfError(error, "diagnoses.findByUser");
+    return (data || []).map(diagnosisRowToObject);
   },
-  findById(id, userId) {
-    return state.diagnoses.find((d) => d.id === Number(id) && d.userId === Number(userId)) || null;
+
+  async findById(id, userId) {
+    const { data, error } = await ensureSupabase()
+      .from("diagnoses")
+      .select("*")
+      .eq("id", Number(id))
+      .eq("user_id", Number(userId))
+      .maybeSingle();
+    throwIfError(error, "diagnoses.findById");
+    return diagnosisRowToObject(data);
   },
-  update(id, fields) {
-    const diagnosis = state.diagnoses.find((d) => d.id === Number(id));
-    if (!diagnosis) return null;
-    Object.assign(diagnosis, fields);
-    save();
-    return diagnosis;
+
+  async update(id, fields) {
+    const row = {};
+    if (fields.workflowStatus !== undefined) row.workflow_status = fields.workflowStatus;
+    const { data, error } = await ensureSupabase()
+      .from("diagnoses")
+      .update(row)
+      .eq("id", Number(id))
+      .select()
+      .maybeSingle();
+    throwIfError(error, "diagnoses.update");
+    return diagnosisRowToObject(data);
   },
-  delete(id) {
-    const idx = state.diagnoses.findIndex((d) => d.id === Number(id));
-    if (idx === -1) return null;
-    const [removed] = state.diagnoses.splice(idx, 1);
-    save();
-    return removed;
+
+  async delete(id) {
+    const { data, error } = await ensureSupabase()
+      .from("diagnoses")
+      .delete()
+      .eq("id", Number(id))
+      .select()
+      .maybeSingle();
+    throwIfError(error, "diagnoses.delete");
+    return diagnosisRowToObject(data);
   },
 };
 
 // ---------------------------------------------------------------------------
-// Botanists (read-only, seeded once)
+// Botanists (6 seeded demo rows, plus real botanists synced in via upsertForUser)
 // ---------------------------------------------------------------------------
 const botanists = {
-  all() {
-    return state.botanists;
+  async all() {
+    if (useSeedData) {
+      return jsonBotanists.map(botanistRowToObject);
+    }
+    const { data, error } = await ensureSupabase().from("botanists").select("*").order("id");
+    throwIfError(error, "botanists.all");
+    return (data || []).map(botanistRowToObject);
+  },
+
+  // Creates or updates the botanists-table row that mirrors a real
+  // botanist account's public profile, keyed by user_id. Called whenever a
+  // botanist saves their profile (routes/botanists.js PUT /me), so the
+  // Nearby Botanists listing can read from this one table directly instead
+  // of merging `users` and `botanists` at query time.
+  async upsertForUser(user) {
+    if (useSeedData) {
+      const existingIndex = jsonBotanists.findIndex((b) => Number(b.user_id) === Number(user.id));
+      const nextEntry = {
+        id: existingIndex >= 0 ? jsonBotanists[existingIndex].id : jsonBotanists.length + 1,
+        user_id: user.id,
+        name: user.name,
+        specialty: user.specialty,
+        rating: user.rating,
+        reviews: user.reviews,
+        distance_km: null,
+        lat: user.lat,
+        lng: user.lng,
+        location: user.location,
+        phone: user.phone,
+        email: user.email,
+        experience_years: user.experienceYears,
+        verified: user.verified,
+        specializations: user.specializations,
+      };
+      if (existingIndex >= 0) {
+        jsonBotanists[existingIndex] = nextEntry;
+      } else {
+        jsonBotanists.push(nextEntry);
+      }
+      return botanistRowToObject(nextEntry);
+    }
+    const row = {
+      user_id: user.id,
+      name: user.name,
+      specialty: user.specialty,
+      rating: user.rating,
+      reviews: user.reviews,
+      distance_km: null,
+      lat: user.lat,
+      lng: user.lng,
+      location: user.location,
+      phone: user.phone,
+      email: user.email,
+      experience_years: user.experienceYears,
+      verified: user.verified,
+      specializations: user.specializations,
+    };
+    const { data: existingRows, error: selectError } = await ensureSupabase()
+      .from("botanists")
+      .select("*")
+      .eq("user_id", Number(user.id));
+    throwIfError(selectError, "botanists.upsertForUser.select");
+
+    const existing = existingRows?.[0];
+    let result;
+
+    if (existing) {
+      const { data, error } = await ensureSupabase()
+        .from("botanists")
+        .update(row)
+        .eq("id", existing.id)
+        .select()
+        .single();
+      throwIfError(error, "botanists.upsertForUser.update");
+      result = data;
+    } else {
+      const { data, error } = await ensureSupabase()
+        .from("botanists")
+        .insert(row)
+        .select()
+        .single();
+      throwIfError(error, "botanists.upsertForUser.insert");
+      result = data;
+    }
+
+    return botanistRowToObject(result);
   },
 };
 
-module.exports = { users, diagnoses, botanists };
+// ---------------------------------------------------------------------------
+// Consultations — in-app "Contact" messages from a plant owner to a
+// registered botanist.
+// ---------------------------------------------------------------------------
+const consultations = {
+  // Starts a new conversation thread with an opening message.
+  async create({ fromUserId, toBotanistUserId, message, diagnosisId = null }) {
+    const row = {
+      from_user_id: fromUserId,
+      to_botanist_user_id: toBotanistUserId,
+      message,
+      diagnosis_id: diagnosisId,
+      status: "new",
+    };
+    const { data, error } = await ensureSupabase().from("consultations").insert(row).select().single();
+    throwIfError(error, "consultations.create");
+    const consultation = consultationRowToObject(data);
+
+    // The opening message is also the first row in `messages`, so the
+    // thread view doesn't need to special-case "message 0".
+    await messages.create({ consultationId: consultation.id, senderId: fromUserId, body: message });
+
+    return consultation;
+  },
+
+  // Every conversation a given user is a participant in — as the farmer
+  // who started it, or the botanist it was sent to.
+  async findForUser(userId) {
+    const { data, error } = await ensureSupabase()
+      .from("consultations")
+      .select("*")
+      .or(`from_user_id.eq.${Number(userId)},to_botanist_user_id.eq.${Number(userId)}`)
+      .order("last_message_at", { ascending: false });
+    throwIfError(error, "consultations.findForUser");
+    return (data || []).map(consultationRowToObject);
+  },
+
+  // A single conversation, but only if the requesting user is actually one
+  // of its two participants — prevents reading someone else's messages by
+  // guessing an id.
+  async findByIdForUser(id, userId) {
+    const { data, error } = await ensureSupabase()
+      .from("consultations")
+      .select("*")
+      .eq("id", Number(id))
+      .or(`from_user_id.eq.${Number(userId)},to_botanist_user_id.eq.${Number(userId)}`)
+      .maybeSingle();
+    throwIfError(error, "consultations.findByIdForUser");
+    return consultationRowToObject(data);
+  },
+
+  async updateStatus(id, status) {
+    const { data, error } = await ensureSupabase()
+      .from("consultations")
+      .update({ status })
+      .eq("id", Number(id))
+      .select()
+      .maybeSingle();
+    throwIfError(error, "consultations.updateStatus");
+    return consultationRowToObject(data);
+  },
+
+  async touchLastMessageAt(id) {
+    const { error } = await ensureSupabase()
+      .from("consultations")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", Number(id));
+    throwIfError(error, "consultations.touchLastMessageAt");
+  },
+};
+
+const messages = {
+  async create({ consultationId, senderId, body }) {
+    const row = { consultation_id: consultationId, sender_id: senderId, body };
+    const { data, error } = await ensureSupabase().from("messages").insert(row).select().single();
+    throwIfError(error, "messages.create");
+    await consultations.touchLastMessageAt(consultationId);
+    return messageRowToObject(data);
+  },
+
+  async findByConsultation(consultationId) {
+    const { data, error } = await ensureSupabase()
+      .from("messages")
+      .select("*")
+      .eq("consultation_id", Number(consultationId))
+      .order("created_at", { ascending: true });
+    throwIfError(error, "messages.findByConsultation");
+    return (data || []).map(messageRowToObject);
+  },
+};
+
+module.exports = { users, diagnoses, botanists, consultations, messages };

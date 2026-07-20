@@ -10,12 +10,18 @@ const locationStatus = document.getElementById("locationStatus");
 
 let botanists = [];
 let userCoords = null; // { lat, lng } once geolocation succeeds
+let activeMessageBotanist = null;
 const contactModalTitle = document.getElementById("contactModalTitle");
 const contactModalSub = document.getElementById("contactModalSub");
 const phoneLink = document.getElementById("contactModalPhoneLink");
 const phoneCopyBtn = document.getElementById("contactModalPhoneCopy");
 const emailLink = document.getElementById("contactModalEmailLink");
 const emailCopyBtn = document.getElementById("contactModalEmailCopy");
+const messageModalTitle = document.getElementById("messageModalTitle");
+const messageModalSub = document.getElementById("messageModalSub");
+const messageComposer = document.getElementById("messageComposer");
+const messageModalStatus = document.getElementById("messageModalStatus");
+const messageSendBtn = document.getElementById("messageModalSend");
 
 function initials(name) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2);
@@ -67,6 +73,49 @@ function openContactModal(b) {
   }
 
   openModal("contactModal");
+}
+
+function openMessageModal(b) {
+  activeMessageBotanist = b;
+  messageModalTitle.textContent = `Message ${b.name}`;
+  messageModalSub.textContent = b.specialty || "Plant specialist";
+  messageComposer.value = "";
+  messageModalStatus.textContent = "";
+  messageModalStatus.className = "text-sm text-muted mt-2";
+  messageSendBtn.disabled = false;
+  openModal("messageModal");
+}
+
+async function sendMessageToBotanist() {
+  if (!activeMessageBotanist || !activeMessageBotanist.userId) return;
+
+  const message = messageComposer.value.trim();
+  if (!message) {
+    messageModalStatus.textContent = "Please enter a message before sending.";
+    messageModalStatus.className = "text-sm text-danger mt-2";
+    return;
+  }
+
+  messageSendBtn.disabled = true;
+  messageModalStatus.textContent = "Sending...";
+  messageModalStatus.className = "text-sm text-muted mt-2";
+
+  try {
+    await apiFetch("/api/consultations", {
+      method: "POST",
+      body: {
+        botanistId: activeMessageBotanist.userId,
+        message,
+      },
+    });
+
+    closeModal("messageModal");
+    window.location.href = `messages.html?botanist=${activeMessageBotanist.userId}&name=${encodeURIComponent(activeMessageBotanist.name)}`;
+  } catch (err) {
+    messageModalStatus.textContent = err.message || "Could not send message.";
+    messageModalStatus.className = "text-sm text-danger mt-2";
+    messageSendBtn.disabled = false;
+  }
 }
 
 // Ask the browser for the user's real position. Resolves to null (instead
@@ -137,15 +186,21 @@ function render() {
         <div><p class="text-sm font-medium mb-1">Location</p><p class="text-sm text-muted">📍 ${b.location}</p></div>
         <div>
           <p class="text-sm font-medium mb-2">Specializations</p>
-          <div class="flex gap-1" style="flex-wrap:wrap">${b.specializations.map((s) => `<span class="badge badge-gray text-xs">${s}</span>`).join("")}</div>
+          <div class="flex gap-1" style="flex-wrap:wrap">${(Array.isArray(b.specializations) ? b.specializations : []).map((s) => `<span class="badge badge-gray text-xs">${s}</span>`).join("")}</div>
         </div>
+        
         <div class="flex gap-2 mt-2">
-          <button class="btn btn-primary btn-contact" style="flex:1" type="button">Contact</button>
-          <button class="btn btn-outline btn-contact" style="flex:1" type="button">Email</button>
-        </div>
+  <button class="btn btn-primary btn-contact" style="flex:1" type="button">Contact</button>
+  <button class="btn btn-outline btn-contact" style="flex:1" type="button">Email</button>
+  <button class="btn btn-outline btn-message" style="flex:1" type="button">Message</button>
+</div>
       </div>
     `;
     card.querySelectorAll(".btn-contact").forEach((btn) => btn.addEventListener("click", () => openContactModal(b)));
+    const messageBtn = card.querySelector(".btn-message");
+    if (messageBtn) {
+      messageBtn.addEventListener("click", () => openMessageModal(b));
+    }
     grid.appendChild(card);
   });
 }
@@ -161,5 +216,8 @@ async function init() {
 searchInput.addEventListener("input", loadBotanists);
 specialtyFilter.addEventListener("change", loadBotanists);
 sortBy.addEventListener("change", loadBotanists);
+messageSendBtn.addEventListener("click", sendMessageToBotanist);
+
+init();
 
 init();

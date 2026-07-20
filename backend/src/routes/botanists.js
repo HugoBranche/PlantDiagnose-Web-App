@@ -17,96 +17,155 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Turns a real registered botanist user account into the same shape as the
-// seeded demo botanists, so the frontend doesn't need to know the difference.
-function toBotanistCard(user) {
-  return {
-    id: `u-${user.id}`,
-    name: user.name,
-    specialty: user.specialty,
-    rating: user.rating,
-    reviews: user.reviews,
-    distanceKm: null, // filled in below once we know if we have the user's location
-    lat: user.lat,
-    lng: user.lng,
-    location: user.location,
-    phone: user.phone,
-    email: user.email,
-    experienceYears: user.experienceYears,
-    verified: user.verified,
-    specializations: user.specializations,
-  };
-}
-
 // GET /api/botanists?search=&specialty=&sort=distance|rating|reviews&lat=&lng=
-router.get("/", (req, res) => {
-  const { search = "", specialty = "all", sort = "distance", lat, lng } = req.query;
+// Reads directly from the `botanists` table, which now holds both the 6
+// demo/seed rows (userId: null) and real registered botanists (userId set),
+// kept in sync by PUT /me below.
+router.get("/", async (req, res) => {
+  try {
+    const { search = "", specialty = "all", sort = "distance", lat, lng } = req.query;
 
-  let rows = [...db.botanists.all(), ...db.users.allBotanists().map(toBotanistCard)];
+    let rows = await db.botanists.all();
+    const botanistUsers = await db.users.findByRole("botanist");
 
-  const userLat = lat !== undefined ? parseFloat(lat) : null;
-  const userLng = lng !== undefined ? parseFloat(lng) : null;
-  const hasUserLocation = Number.isFinite(userLat) && Number.isFinite(userLng);
+    const mergedByKey = new Map();
+    rows.forEach((b) => {
+      const key = b.userId != null ? `user:${b.userId}` : `demo:${b.id}`;
+      mergedByKey.set(key, { ...b, specializations: Array.isArray(b.specializations) ? b.specializations : [] });
+    });
 
-  // If the browser gave us the user's real position, compute a real
-  // distance for every botanist. Otherwise fall back to the seeded
-  // placeholder distanceKm (real botanists with no fallback just show "—").
-  rows = rows.map((b) => ({
-    ...b,
-    distanceKm: hasUserLocation && b.lat != null && b.lng != null
-      ? Math.round(haversineKm(userLat, userLng, b.lat, b.lng) * 10) / 10
-      : b.distanceKm,
-  }));
+    botanistUsers.forEach((user) => {
+      const key = `user:${user.id}`;
+      const existing = mergedByKey.get(key);
+      const normalizedUser = {
+        id: user.id,
+        userId: user.id,
+        name: user.name,
+        specialty: user.specialty || "General Botany",
+        rating: user.rating ?? 4.5,
+        reviews: user.reviews ?? 0,
+        distanceKm: null,
+        lat: user.lat,
+        lng: user.lng,
+        location: user.location || "Location not yet updated",
+        phone: user.phone,
+        email: user.email,
+        experienceYears: user.experienceYears ?? 0,
+        verified: user.verified ?? true,
+        specializations: Array.isArray(user.specializations) ? user.specializations : [],
+      };
 
-  const q = search.toLowerCase();
-  if (q) {
-    rows = rows.filter(
-      (b) =>
-        b.name.toLowerCase().includes(q) ||
-        b.specialty.toLowerCase().includes(q) ||
-        b.specializations.some((s) => s.toLowerCase().includes(q))
+      mergedByKey.set(key, existing
+        ? {
+            ...normalizedUser,
+            ...existing,
+            id: existing.id ?? normalizedUser.id,
+            userId: normalizedUser.userId,
+            name: existing.name || normalizedUser.name,
+            specialty: existing.specialty || normalizedUser.specialty,
+            rating: existing.rating ?? normalizedUser.rating,
+            reviews: existing.reviews ?? normalizedUser.reviews,
+            lat: existing.lat ?? normalizedUser.lat,
+            lng: existing.lng ?? normalizedUser.lng,
+            location: existing.location || normalizedUser.location,
+            phone: existing.phone ?? normalizedUser.phone,
+            email: existing.email ?? normalizedUser.email,
+            experienceYears: existing.experienceYears ?? normalizedUser.experienceYears,
+            verified: existing.verified ?? normalizedUser.verified,
+            specializations: Array.isArray(existing.specializations) && existing.specializations.length > 0
+              ? existing.specializations
+              : normalizedUser.specializations,
+          }
+        : normalizedUser);
+    });
+
+    rows = Array.from(mergedByKey.values());
+
+    const visibleBotanistUserIds = new Set(
+      botanistUsers
+        .filter((user) => user.role === "botanist" && user.verified !== false)
+        .map((user) => Number(user.id))
     );
-  }
-  if (specialty !== "all") {
-    rows = rows.filter((b) => b.specialty === specialty);
-  }
-  rows = [...rows].sort((a, b) => {
-    if (sort === "rating") return b.rating - a.rating;
-    if (sort === "reviews") return b.reviews - a.reviews;
-    if (a.distanceKm == null) return 1;
-    if (b.distanceKm == null) return -1;
-    return a.distanceKm - b.distanceKm;
-  });
+    rows = rows.filter((b) => b.userId == null || visibleBotanistUserIds.has(Number(b.userId)));
 
-  res.json({ botanists: rows, usedRealLocation: hasUserLocation });
+    const userLat = lat !== undefined ? parseFloat(lat) : null;
+    const userLng = lng !== undefined ? parseFloat(lng) : null;
+    const hasUserLocation = Number.isFinite(userLat) && Number.isFinite(userLng);
+
+    rows = rows.map((b) => ({
+      ...b,
+      specializations: Array.isArray(b.specializations) ? b.specializations : [],
+      distanceKm: hasUserLocation && b.lat != null && b.lng != null
+        ? Math.round(haversineKm(userLat, userLng, b.lat, b.lng) * 10) / 10
+        : b.distanceKm,
+    }));
+
+    const q = search.toLowerCase();
+    if (q) {
+      rows = rows.filter((b) => {
+        const name = (b.name || "").toLowerCase();
+        const specialty = (b.specialty || "").toLowerCase();
+        const specials = (b.specializations || []).filter(Boolean).map((s) => String(s).toLowerCase());
+        return name.includes(q) || specialty.includes(q) || specials.some((s) => s.includes(q));
+      });
+    }
+    if (specialty !== "all") {
+      rows = rows.filter((b) => b.specialty === specialty);
+    }
+    rows = [...rows].sort((a, b) => {
+      if (sort === "rating") return b.rating - a.rating;
+      if (sort === "reviews") return b.reviews - a.reviews;
+      if (a.distanceKm == null) return 1;
+      if (b.distanceKm == null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+
+    res.json({ botanists: rows, usedRealLocation: hasUserLocation });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not load botanists." });
+  }
 });
 
 // PUT /api/botanists/me — a logged-in botanist completes/updates their own
 // public profile (specialty, specializations, bio, experience, location).
-router.put("/me", requireAuth, (req, res) => {
-  const user = db.users.findById(req.userId);
-  if (!user) return res.status(404).json({ error: "User not found." });
-  if (user.role !== "botanist") {
-    return res.status(403).json({ error: "Only botanist accounts can update a botanist profile." });
+// This updates their `users` row (the source of truth for login/auth) AND
+// syncs a matching row into `botanists` (what the Nearby Botanists listing
+// actually reads from).
+router.put("/me", requireAuth, async (req, res) => {
+  try {
+    const user = await db.users.findById(req.userId);
+    if (!user) return res.status(404).json({ error: "User not found." });
+    if (user.role !== "botanist") {
+      return res.status(403).json({ error: "Only botanist accounts can update a botanist profile." });
+    }
+
+    const { specialty, specializations, bio, experienceYears, phone, location, lat, lng } = req.body;
+    const fields = {};
+    if (specialty !== undefined) fields.specialty = specialty;
+    if (specializations !== undefined) fields.specializations = specializations;
+    if (bio !== undefined) fields.bio = bio;
+    if (experienceYears !== undefined) fields.experienceYears = Number(experienceYears) || 0;
+    if (phone !== undefined) fields.phone = phone;
+    if (location !== undefined) fields.location = location;
+    if (lat !== undefined) fields.lat = lat;
+    if (lng !== undefined) fields.lng = lng;
+
+    const merged = { ...user, ...fields };
+    fields.profileComplete = Boolean(merged.specialty && merged.location && merged.lat != null && merged.lng != null);
+
+    const saved = await db.users.update(req.userId, fields);
+
+    // Only put them in the public Nearby Botanists listing once their
+    // profile is actually complete, same rule as before.
+    if (saved.profileComplete) {
+      await db.botanists.upsertForUser(saved);
+    }
+
+    const { passwordHash, ...publicUser } = saved;
+    res.json({ user: publicUser });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not update botanist profile." });
   }
-
-  const { specialty, specializations, bio, experienceYears, phone, location, lat, lng } = req.body;
-  const fields = {};
-  if (specialty !== undefined) fields.specialty = specialty;
-  if (specializations !== undefined) fields.specializations = specializations;
-  if (bio !== undefined) fields.bio = bio;
-  if (experienceYears !== undefined) fields.experienceYears = Number(experienceYears) || 0;
-  if (phone !== undefined) fields.phone = phone;
-  if (location !== undefined) fields.location = location;
-  if (lat !== undefined) fields.lat = lat;
-  if (lng !== undefined) fields.lng = lng;
-
-  const updated = { ...user, ...fields };
-  fields.profileComplete = Boolean(updated.specialty && updated.location && updated.lat != null && updated.lng != null);
-
-  const saved = db.users.update(req.userId, fields);
-  const { passwordHash, ...publicUser } = saved;
-  res.json({ user: publicUser });
 });
 
 module.exports = router;

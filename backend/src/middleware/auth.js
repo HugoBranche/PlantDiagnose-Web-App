@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const db = require("../db");
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
@@ -11,6 +12,7 @@ function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = payload.userId;
+    req.user = await db.users.findById(req.userId);
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token." });
@@ -18,3 +20,4 @@ function requireAuth(req, res, next) {
 }
 
 module.exports = { requireAuth };
+

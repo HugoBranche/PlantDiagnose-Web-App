@@ -1,6 +1,6 @@
 {
-  "nextUserId": 3,
-  "nextDiagnosisId": 5,
+  "nextUserId": 4,
+  "nextDiagnosisId": 12,
   "users": [
     {
       "id": 1,
@@ -46,8 +46,8 @@
         "weeklyReports": false,
         "marketingEmails": false,
         "language": "en",
-        "theme": "light",
-        "units": "imperial"
+        "theme": "dark",
+        "units": "metric"
       },
       "specialty": "Agricultural Science",
       "specializations": [],
@@ -59,6 +59,35 @@
       "reviews": 0,
       "profileComplete": true,
       "createdAt": "2026-07-13T07:58:25.088Z"
+    },
+    {
+      "id": 3,
+      "name": "Hugo Branche",
+      "email": "hugobranche0@gmail.com",
+      "passwordHash": "$2a$10$Xh0476hjE1JTRs32xiVYieTmiNOVU4OLWUoP.8Fslv4kvRgX9NM8W",
+      "role": "botanist",
+      "phone": "254741464688",
+      "location": "Lumumba Drive",
+      "bio": "",
+      "settings": {
+        "emailNotifications": true,
+        "pushNotifications": true,
+        "weeklyReports": false,
+        "marketingEmails": false,
+        "language": "en",
+        "theme": "light",
+        "units": "imperial"
+      },
+      "specialty": "Plant Nutrition",
+      "specializations": [],
+      "experienceYears": 8,
+      "lat": -1.2182530277684844,
+      "lng": 36.88886638491134,
+      "verified": true,
+      "rating": 4.5,
+      "reviews": 0,
+      "profileComplete": true,
+      "createdAt": "2026-07-14T00:07:35.048Z"
     }
   ],
   "diagnoses": [
@@ -109,6 +138,90 @@
       "severity": "Severe",
       "workflowStatus": "In Progress",
       "createdAt": "2026-07-13T09:47:26.316Z"
+    },
+    {
+      "id": 5,
+      "userId": 2,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\2-1783987348060.png",
+      "plant": "Squash",
+      "condition": "Powdery mildew",
+      "status": "Diseased",
+      "confidence": 42.03,
+      "severity": "Mild",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-14T00:02:33.875Z"
+    },
+    {
+      "id": 6,
+      "userId": 2,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\2-1783987384000.png",
+      "plant": "Strawberry",
+      "condition": "Leaf scorch",
+      "status": "Diseased",
+      "confidence": 99.98,
+      "severity": "Severe",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-14T00:03:07.679Z"
+    },
+    {
+      "id": 7,
+      "userId": 3,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\3-1783993864795.png",
+      "plant": "Strawberry",
+      "condition": "Leaf scorch",
+      "status": "Diseased",
+      "confidence": 99.98,
+      "severity": "Severe",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-14T01:51:09.009Z"
+    },
+    {
+      "id": 8,
+      "userId": 3,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\3-1784110687290.png",
+      "plant": "Tomato",
+      "condition": "Late blight",
+      "status": "Diseased",
+      "confidence": 98.73,
+      "severity": "Severe",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-15T10:18:26.457Z"
+    },
+    {
+      "id": 9,
+      "userId": 3,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\3-1784110735392.png",
+      "plant": "Strawberry",
+      "condition": "Leaf scorch",
+      "status": "Diseased",
+      "confidence": 99.98,
+      "severity": "Severe",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-15T10:19:00.943Z"
+    },
+    {
+      "id": 10,
+      "userId": 3,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\3-1784110800604.png",
+      "plant": "Tomato",
+      "condition": "Late blight",
+      "status": "Diseased",
+      "confidence": 63.13,
+      "severity": "Moderate",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-15T10:20:08.017Z"
+    },
+    {
+      "id": 11,
+      "userId": 3,
+      "imagePath": "C:\\Users\\hugob\\OneDrive\\Desktop\\PlantDiagnose WebApp\\backend\\uploads\\3-1784110832004.png",
+      "plant": "Tomato",
+      "condition": "Septoria leaf spot",
+      "status": "Diseased",
+      "confidence": 89.86,
+      "severity": "Severe",
+      "workflowStatus": "In Progress",
+      "createdAt": "2026-07-15T10:20:38.604Z"
     }
   ],
   "botanists": [

@@ -9,7 +9,7 @@ async function callGradioApi(imagePath) {
     });
     console.log(result);
 
-    // Gradio v2.x returns the prediction in result.data
+    
     const output = Array.isArray(result.data)
       ? result.data[0]
       : result.data;

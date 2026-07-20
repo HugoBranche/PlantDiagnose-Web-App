@@ -36,27 +36,31 @@ const SEASONAL_TIPS = [
 
 // GET /api/recommendations — action items generated from the user's
 // un-treated diagnoses, plus the static seasonal tips shown to everyone.
-router.get("/", requireAuth, (req, res) => {
-  const all = db.diagnoses.findByUser(req.userId);
-  const diseased = all.filter((d) => d.status === "Diseased");
-  const pending = diseased.filter((d) => d.workflowStatus !== "Treated");
-  const treatedCount = all.filter((d) => d.workflowStatus === "Treated").length;
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const all = await db.diagnoses.findByUser(req.userId);
+    const diseased = all.filter((d) => d.status === "Diseased");
+    const pending = diseased.filter((d) => d.workflowStatus !== "Treated");
+    const treatedCount = all.filter((d) => d.workflowStatus === "Treated").length;
 
-  const actionItems = pending.map((d) => ({
-    diagnosisId: d.id,
-    title: `Treat ${d.condition || "detected issue"} on ${d.plant || "your plant"}`,
-    severity: d.severity,
-    createdAt: d.createdAt,
-  }));
+    const actionItems = pending.map((d) => ({
+      diagnosisId: d.id,
+      title: `Treat ${d.condition || "detected issue"} on ${d.plant || "your plant"}`,
+      severity: d.severity,
+      createdAt: d.createdAt,
+    }));
 
-  res.json({
-    actionItems,
-    totalRecommendations: diseased.length,
-    pendingActions: pending.length,
-    completed: treatedCount,
-    completionRate: diseased.length > 0 ? Math.round((treatedCount / diseased.length) * 100) : 0,
-    seasonalTips: SEASONAL_TIPS,
-  });
+    res.json({
+      actionItems,
+      totalRecommendations: diseased.length,
+      pendingActions: pending.length,
+      completed: treatedCount,
+      completionRate: diseased.length > 0 ? Math.round((treatedCount / diseased.length) * 100) : 0,
+      seasonalTips: SEASONAL_TIPS,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not load recommendations." });
+  }
 });
 
 module.exports = router;

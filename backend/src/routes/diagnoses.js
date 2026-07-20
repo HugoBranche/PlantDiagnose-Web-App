@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB, matches the frontend's stated limit
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
       return cb(new Error("Only image uploads are allowed."));
@@ -60,8 +60,7 @@ router.post("/", requireAuth, upload.single("image"), async (req, res) => {
     const result = await callGradioApi(req.file.path);
     const severity = severityFromConfidence(result.status, result.confidence);
 
-    
-    const diagnosis = db.diagnoses.create({
+    const diagnosis = await db.diagnoses.create({
       userId: req.userId,
       imagePath: req.file.path,
       plant: result.plant,
@@ -79,41 +78,57 @@ router.post("/", requireAuth, upload.single("image"), async (req, res) => {
 });
 
 // GET /api/diagnoses — list current user's diagnoses (newest first)
-router.get("/", requireAuth, (req, res) => {
-  const rows = db.diagnoses.findByUser(req.userId);
-  res.json({ diagnoses: rows.map(toPublicDiagnosis) });
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const rows = await db.diagnoses.findByUser(req.userId);
+    res.json({ diagnoses: rows.map(toPublicDiagnosis) });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not load diagnoses." });
+  }
 });
 
 // GET /api/diagnoses/:id
-router.get("/:id", requireAuth, (req, res) => {
-  const row = db.diagnoses.findById(req.params.id, req.userId);
-  if (!row) return res.status(404).json({ error: "Diagnosis not found." });
-  res.json({ diagnosis: toPublicDiagnosis(row) });
+router.get("/:id", requireAuth, async (req, res) => {
+  try {
+    const row = await db.diagnoses.findById(req.params.id, req.userId);
+    if (!row) return res.status(404).json({ error: "Diagnosis not found." });
+    res.json({ diagnosis: toPublicDiagnosis(row) });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not load diagnosis." });
+  }
 });
 
 // PUT /api/diagnoses/:id — update workflow status (e.g. mark as Treated)
-router.put("/:id", requireAuth, (req, res) => {
-  const { workflowStatus } = req.body;
-  const allowed = ["In Progress", "Treated", "Monitoring"];
-  if (!allowed.includes(workflowStatus)) {
-    return res.status(400).json({ error: `workflowStatus must be one of: ${allowed.join(", ")}` });
+router.put("/:id", requireAuth, async (req, res) => {
+  try {
+    const { workflowStatus } = req.body;
+    const allowed = ["In Progress", "Treated", "Monitoring"];
+    if (!allowed.includes(workflowStatus)) {
+      return res.status(400).json({ error: `workflowStatus must be one of: ${allowed.join(", ")}` });
+    }
+
+    const row = await db.diagnoses.findById(req.params.id, req.userId);
+    if (!row) return res.status(404).json({ error: "Diagnosis not found." });
+
+    const updated = await db.diagnoses.update(req.params.id, { workflowStatus });
+    res.json({ diagnosis: toPublicDiagnosis(updated) });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not update diagnosis." });
   }
-
-  const row = db.diagnoses.findById(req.params.id, req.userId);
-  if (!row) return res.status(404).json({ error: "Diagnosis not found." });
-
-  const updated = db.diagnoses.update(req.params.id, { workflowStatus });
-  res.json({ diagnosis: toPublicDiagnosis(updated) });
 });
 
 // DELETE /api/diagnoses/:id
-router.delete("/:id", requireAuth, (req, res) => {
-  const row = db.diagnoses.findById(req.params.id, req.userId);
-  if (!row) return res.status(404).json({ error: "Diagnosis not found." });
+router.delete("/:id", requireAuth, async (req, res) => {
+  try {
+    const row = await db.diagnoses.findById(req.params.id, req.userId);
+    if (!row) return res.status(404).json({ error: "Diagnosis not found." });
 
-  db.diagnoses.delete(req.params.id);
-  fs.unlink(row.imagePath, () => {});
-  res.json({ ok: true });
+    await db.diagnoses.delete(req.params.id);
+    fs.unlink(row.imagePath, () => {});
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not delete diagnosis." });
+  }
 });
 
 module.exports = router;

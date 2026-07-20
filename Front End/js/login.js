@@ -47,7 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await request();
         Auth.setToken(data.token);
         Auth.setUser(data.user);
-        if (data.user.role === "botanist" && !data.user.profileComplete) {
+        if (data.user.role === "admin") {
+          window.location.href = "admin.html";
+        } else if (data.user.role === "botanist" && !data.user.profileComplete) {
           window.location.href = "botanist-profile.html";
         } else {
           window.location.href = "dashboard.html";
@@ -59,6 +61,38 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  document.getElementById("adminSigninBtn")?.addEventListener("click", async () => {
+    hideError();
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const submitBtn = document.getElementById("signinSubmit");
+    const original = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Signing in...";
+
+    try {
+      const data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: {
+          email: emailInput.value.trim(),
+          password: passwordInput.value,
+        },
+      });
+
+      if (data.user.role !== "admin") {
+        throw new Error("This account is not an admin account.");
+      }
+
+      Auth.setToken(data.token);
+      Auth.setUser(data.user);
+      window.location.href = "admin.html";
+    } catch (err) {
+      showError(err.message || "Unable to sign in as admin.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = original;
+    }
+  });
 
   handleAuth(
     document.getElementById("signinForm"),
