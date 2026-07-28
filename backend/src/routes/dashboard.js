@@ -4,9 +4,19 @@ const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// GET /api/dashboard/stats — powers the Dashboard stat cards and Reports page
+function isWithinLastDays(dateValue, days) {
+  if (!dateValue) return false;
+  const createdAt = new Date(dateValue);
+  if (Number.isNaN(createdAt.getTime())) return false;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return createdAt >= cutoff;
+}
+
+// GET /api/dashboard/stats — powers the Dashboard stat cards and role-based views
 router.get("/stats", requireAuth, async (req, res) => {
   try {
+    const role = req.user?.role || "user";
     const [rows, seedBotanists] = await Promise.all([
       db.diagnoses.findByUser(req.userId),
       db.botanists.all(),
@@ -34,7 +44,8 @@ router.get("/stats", requireAuth, async (req, res) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    res.json({
+    const baseStats = {
+      role,
       totalDiagnoses: total,
       healthyPlants: healthy,
       diseasedPlants: diseased,
@@ -42,6 +53,38 @@ router.get("/stats", requireAuth, async (req, res) => {
       avgConfidence,
       diseaseDetectionRate: total > 0 ? Math.round((diseased / total) * 1000) / 10 : null,
       topDiseases,
+    };
+
+    if (role === "admin") {
+      const farmers = (await db.users.findByRole("user")).filter((user) => isWithinLastDays(user.createdAt, 7));
+      const pendingBotanists = (await db.users.findByRole("botanist")).filter((user) => !user.approved && !user.verified);
+
+      return res.json({
+        ...baseStats,
+        dashboardType: "admin",
+        newFarmersThisWeek: farmers.length,
+        pendingBotanists: pendingBotanists.slice(0, 5),
+        pendingBotanistsCount: pendingBotanists.length,
+      });
+    }
+
+    if (role === "botanist") {
+      const consultations = (await db.consultations.findForUser(req.userId))
+        .filter((c) => Number(c.toBotanistUserId) === Number(req.userId));
+      const uniqueSenders = new Set(consultations.map((c) => String(c.fromUserId)).filter(Boolean));
+
+      return res.json({
+        ...baseStats,
+        dashboardType: "botanist",
+        consultationCount: consultations.length,
+        newContactsCount: uniqueSenders.size,
+        recentConsultations: consultations.slice(0, 3),
+      });
+    }
+
+    res.json({
+      ...baseStats,
+      dashboardType: "farmer",
     });
   } catch (err) {
     res.status(500).json({ error: err.message || "Could not load dashboard stats." });

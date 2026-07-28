@@ -66,7 +66,9 @@
         </div>
       </div>
 
-      <div class="grid grid-4 mt-4">
+      <div id="roleDashboardContent" class="mt-4"></div>
+
+      <div class="grid grid-4 mt-4" id="farmerStatsGrid">
         <a class="card stat-card" href="history.html" style="text-decoration:none;color:inherit">
           <div><p class="stat-label">Total Diagnoses</p><p class="stat-value" id="statTotalValue">0</p><p class="stat-sub" id="statTotalSub">No data yet</p></div>
           <div class="stat-icon-wrap" style="background:#eff6ff;color:#2563eb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
@@ -85,7 +87,7 @@
         </a>
       </div>
 
-      <div class="card card-shadow mt-4">
+      <div class="card card-shadow mt-4" id="farmerTrendCard">
         <div class="card-header">
           <div class="flex items-center justify-between">
             <div class="card-title">Diagnoses Trend</div>
@@ -101,7 +103,7 @@
         </div>
       </div>
 
-      <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:1.5rem">
+      <div class="grid" id="farmerSectionsGrid" style="grid-template-columns: 2fr 1fr; margin-top:1.5rem">
         <div class="space-y-6">
 
          <div class="card card-shadow">

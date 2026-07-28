@@ -23,6 +23,26 @@ function timeAgo(iso) {
   return `${days}d ago`;
 }
 
+function getUserRole() {
+  const user = Auth?.getUser?.();
+  return (user?.role || "user").toLowerCase();
+}
+
+function setDashboardVisibility(role) {
+  const farmerStatsGrid = document.getElementById("farmerStatsGrid");
+  const farmerTrendCard = document.getElementById("farmerTrendCard");
+  const farmerSectionsGrid = document.getElementById("farmerSectionsGrid");
+  const roleDashboardContent = document.getElementById("roleDashboardContent");
+
+  if (!farmerStatsGrid || !farmerTrendCard || !farmerSectionsGrid || !roleDashboardContent) return;
+
+  const isFarmer = role === "user" || role === "farmer" || role === "";
+  farmerStatsGrid.style.display = isFarmer ? "grid" : "none";
+  farmerTrendCard.style.display = isFarmer ? "block" : "none";
+  farmerSectionsGrid.style.display = isFarmer ? "grid" : "none";
+  roleDashboardContent.style.display = isFarmer ? "none" : "block";
+}
+
 async function loadDashboard() {
   try {
     const [stats, diagnosesRes, recsRes, botanistsRes] = await Promise.all([
@@ -32,15 +52,114 @@ async function loadDashboard() {
       apiFetch("/api/botanists"),
     ]);
 
-    renderStats(stats);
-    renderDiagnosesTrend(diagnosesRes.diagnoses);
-    renderRecentDiagnoses(diagnosesRes.diagnoses.slice(0, 3));
-    renderDiseaseDistribution(stats.topDiseases);
-    renderRecommendedActions(recsRes.actionItems.slice(0, 3));
-    renderNearbyExperts(botanistsRes.botanists.slice(0, 3));
+    const role = getUserRole();
+    setDashboardVisibility(role);
+
+    if (role === "admin") {
+      renderAdminDashboard(stats);
+    } else if (role === "botanist") {
+      renderBotanistDashboard(stats);
+    } else {
+      renderStats(stats);
+      renderDiagnosesTrend(diagnosesRes.diagnoses);
+      renderRecentDiagnoses(diagnosesRes.diagnoses.slice(0, 3));
+      renderDiseaseDistribution(stats.topDiseases);
+      renderRecommendedActions(recsRes.actionItems.slice(0, 3));
+      renderNearbyExperts(botanistsRes.botanists.slice(0, 3));
+    }
   } catch (err) {
     console.error("Failed to load dashboard:", err.message);
   }
+}
+
+function renderAdminDashboard(stats) {
+  const wrap = document.getElementById("roleDashboardContent");
+  if (!wrap) return;
+
+  const pending = Array.isArray(stats.pendingBotanists) ? stats.pendingBotanists : [];
+  wrap.innerHTML = `
+    <div class="grid grid-2 mt-4">
+      <div class="card stat-card" style="text-decoration:none;color:inherit">
+        <div>
+          <p class="stat-label">New Farmers This Week</p>
+          <p class="stat-value">${stats.newFarmersThisWeek || 0}</p>
+          <p class="stat-sub">Fresh registrations</p>
+        </div>
+        <div class="stat-icon-wrap" style="background:#eff6ff;color:#2563eb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>
+      </div>
+      <div class="card stat-card" style="text-decoration:none;color:inherit">
+        <div>
+          <p class="stat-label">Pending Botanists</p>
+          <p class="stat-value">${stats.pendingBotanistsCount || 0}</p>
+          <p class="stat-sub">Awaiting review</p>
+        </div>
+        <div class="stat-icon-wrap" style="background:#fefce8;color:#ca8a04"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6 6 .8-4.5 4.4 1.1 6.4L12 17.4 6.4 19.6l1.1-6.4L3 8.8 9 8z"/></svg></div>
+      </div>
+    </div>
+
+    <div class="card card-shadow mt-4">
+      <div class="card-header">
+        <div class="flex items-center justify-between">
+          <div class="card-title">Admit New Botanists</div>
+          <a class="btn btn-outline btn-sm" href="admin.html">Open Admin Panel</a>
+        </div>
+      </div>
+      <div class="card-content">
+        ${pending.length === 0 ? '<div class="empty-state"><h3 class="empty-title">No botanists waiting approval</h3><p class="empty-desc">New botanist requests will appear here when they sign up.</p></div>' : pending.map((botanist) => `
+          <div class="flex items-center justify-between" style="padding:.7rem 0;border-bottom:1px solid var(--border)">
+            <div>
+              <p class="font-medium text-sm">${botanist.name || "Unnamed botanist"}</p>
+              <p class="text-xs text-muted">${botanist.specialty || "Specialty pending"}</p>
+            </div>
+            <span class="badge badge-orange">Pending</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderBotanistDashboard(stats) {
+  const wrap = document.getElementById("roleDashboardContent");
+  if (!wrap) return;
+
+  wrap.innerHTML = `
+    <div class="grid grid-2 mt-4">
+      <div class="card stat-card" style="text-decoration:none;color:inherit">
+        <div>
+          <p class="stat-label">Consultations</p>
+          <p class="stat-value">${stats.consultationCount || 0}</p>
+          <p class="stat-sub">Total conversations</p>
+        </div>
+        <div class="stat-icon-wrap" style="background:#ecfdf3;color:#16a34a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      </div>
+      <div class="card stat-card" style="text-decoration:none;color:inherit">
+        <div>
+          <p class="stat-label">New People</p>
+          <p class="stat-value">${stats.newContactsCount || 0}</p>
+          <p class="stat-sub">Messaged you recently</p>
+        </div>
+        <div class="stat-icon-wrap" style="background:#faf5ff;color:#9333ea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      </div>
+    </div>
+
+    <div class="card card-shadow mt-4">
+      <div class="card-header">
+        <div class="card-title">Recent Conversations</div>
+      </div>
+      <div class="card-content">
+        ${(stats.recentConsultations || []).length === 0 ? '<div class="empty-state"><h3 class="empty-title">No conversations yet</h3><p class="empty-desc">New farmer messages will appear here as soon as they contact you.</p></div>' : (stats.recentConsultations || []).map((consultation) => `
+          <div class="flex items-center justify-between" style="padding:.7rem 0;border-bottom:1px solid var(--border)">
+            <div>
+              <p class="font-medium text-sm">Conversation #${consultation.id}</p>
+              <p class="text-xs text-muted">${consultation.message || "New consultation request"}</p>
+            </div>
+            <span class="badge badge-green">${consultation.status || "new"}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 function renderStats(stats) {
