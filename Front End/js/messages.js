@@ -10,6 +10,14 @@ const threadEl = document.getElementById("threadMessages");
 const composerEl = document.getElementById("threadComposer");
 const replyInput = document.getElementById("replyInput");
 const sendBtn = document.getElementById("sendReplyBtn");
+const reviewCard = document.getElementById("reviewCard");
+const reviewStars = document.getElementById("reviewStars");
+const reviewComment = document.getElementById("reviewComment");
+const reviewStatus = document.getElementById("reviewStatus");
+const submitReviewBtn = document.getElementById("submitReviewBtn");
+const reviewCancelBtn = document.getElementById("reviewCancelBtn");
+let currentReviewSelection = 0;
+let reviewedConversationIds = new Set();
 
 function timeAgo(iso) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -101,13 +109,13 @@ async function selectConversation(id) {
 
   try {
     const data = await apiFetch(`/api/consultations/${id}/messages`);
-    renderThread(data.messages);
+    renderThread(data.messages, data.consultation?.canReview);
   } catch (err) {
     threadEl.innerHTML = `<div class="empty-thread">Could not load this conversation.</div>`;
   }
 }
 
-function renderThread(messages) {
+function renderThread(messages, canReview = false) {
   threadEl.innerHTML = "";
   messages.forEach((m) => {
     const mine = m.senderId === currentUserId;
@@ -117,12 +125,67 @@ function renderThread(messages) {
     threadEl.appendChild(bubble);
   });
   threadEl.scrollTop = threadEl.scrollHeight;
+  toggleReviewCard(messages, canReview);
 }
 
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+function resetReviewForm() {
+  currentReviewSelection = 0;
+  reviewComment.value = "";
+  reviewStatus.textContent = "";
+  reviewStatus.className = "text-sm mt-2";
+  reviewStars?.querySelectorAll(".star-btn").forEach((btn) => btn.classList.remove("active"));
+}
+
+function setReviewSelection(value) {
+  currentReviewSelection = value;
+  reviewStars?.querySelectorAll(".star-btn").forEach((btn) => {
+    btn.classList.toggle("active", Number(btn.dataset.rating) <= value);
+  });
+}
+
+function toggleReviewCard(messages, canReview) {
+  if (!reviewCard) return;
+  const hasBotanistReply = Array.isArray(messages) && messages.some((m) => m.senderId !== currentUserId);
+  const shouldShow = Boolean(activeConversationId) && Boolean(canReview) && hasBotanistReply && !reviewedConversationIds.has(activeConversationId);
+  reviewCard.classList.toggle("hidden", !shouldShow);
+  if (!shouldShow) {
+    resetReviewForm();
+    return;
+  }
+  reviewStatus.textContent = "Pick a star rating for the botanist and share a short note if you want.";
+  reviewStatus.className = "text-sm mt-2 text-muted";
+}
+
+async function submitReview() {
+  if (!activeConversationId || currentReviewSelection < 1) {
+    reviewStatus.textContent = "Please choose a rating before submitting.";
+    reviewStatus.className = "text-sm mt-2 text-danger";
+    return;
+  }
+
+  try {
+    const data = await apiFetch(`/api/consultations/${activeConversationId}/review`, {
+      method: "POST",
+      body: {
+        rating: currentReviewSelection,
+        comment: reviewComment.value.trim() || null,
+      },
+    });
+    reviewedConversationIds.add(activeConversationId);
+    reviewStatus.textContent = data.message || "Thanks for your review.";
+    reviewStatus.className = "text-sm mt-2 text-success";
+    reviewCard.classList.add("hidden");
+    resetReviewForm();
+  } catch (err) {
+    reviewStatus.textContent = err.message || "Could not submit your review.";
+    reviewStatus.className = "text-sm mt-2 text-danger";
+  }
 }
 
 async function sendReply() {
@@ -149,7 +212,7 @@ async function sendReply() {
       });
       replyInput.value = "";
       const data = await apiFetch(`/api/consultations/${activeConversationId}/messages`);
-      renderThread(data.messages);
+      renderThread(data.messages, data.consultation?.canReview);
       loadConversations(); // refresh preview/ordering in the list
     }
   } catch (err) {
@@ -167,6 +230,14 @@ function startPendingConversation(botanistId, botanistName) {
   renderList();
 }
 
+reviewStars?.querySelectorAll(".star-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setReviewSelection(Number(btn.dataset.rating)));
+});
+submitReviewBtn?.addEventListener("click", submitReview);
+reviewCancelBtn?.addEventListener("click", () => {
+  reviewCard?.classList.add("hidden");
+  resetReviewForm();
+});
 sendBtn.addEventListener("click", sendReply);
 replyInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {

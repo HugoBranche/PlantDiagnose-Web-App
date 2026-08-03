@@ -77,6 +77,27 @@
           <div class="thread-messages" id="threadMessages">
             <div class="empty-thread" id="emptyThread">Select a conversation, or start one from a botanist's profile on the Nearby Botanists page.</div>
           </div>
+          <div class="review-card hidden" id="reviewCard">
+            <div class="review-card__header">
+              <div>
+                <div class="review-card__title">How was this consultation?</div>
+                <div class="review-card__hint">Share a quick rating for the botanist after they reply.</div>
+              </div>
+            </div>
+            <div class="review-stars" id="reviewStars">
+              <button class="star-btn" type="button" data-rating="1" aria-label="1 star">★</button>
+              <button class="star-btn" type="button" data-rating="2" aria-label="2 stars">★</button>
+              <button class="star-btn" type="button" data-rating="3" aria-label="3 stars">★</button>
+              <button class="star-btn" type="button" data-rating="4" aria-label="4 stars">★</button>
+              <button class="star-btn" type="button" data-rating="5" aria-label="5 stars">★</button>
+            </div>
+            <textarea id="reviewComment" rows="2" placeholder="Add a short note (optional)"></textarea>
+            <div class="review-actions">
+              <button class="btn btn-outline btn-sm" type="button" id="reviewCancelBtn">Later</button>
+              <button class="btn btn-primary btn-sm" type="button" id="submitReviewBtn">Submit review</button>
+            </div>
+            <div class="text-sm mt-2" id="reviewStatus"></div>
+          </div>
           <div class="thread-composer hidden" id="threadComposer">
             <textarea id="replyInput" rows="1" placeholder="Type a message..."></textarea>
             <button class="btn btn-primary" id="sendReplyBtn">Send</button>

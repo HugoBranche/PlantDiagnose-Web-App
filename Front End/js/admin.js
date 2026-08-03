@@ -19,33 +19,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { users } = await apiFetch("/api/admin/users");
     const container = document.getElementById("usersTable");
     container.innerHTML = `
-      <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="text-align:left;border-bottom:1px solid #e5e7eb;">
-            <th style="padding:.5rem">Name</th>
-            <th style="padding:.5rem">Email</th>
-            <th style="padding:.5rem">Role</th>
-            <th style="padding:.5rem">Status</th>
-            <th style="padding:.5rem">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${users.map((u) => `
+      <div class="table-wrap">
+        <table class="admin-users-table" style="width:100%;border-collapse:collapse;">
+          <thead>
             <tr>
-              <td style="padding:.5rem">${u.name}</td>
-              <td style="padding:.5rem">${u.email}</td>
-              <td style="padding:.5rem">${u.role}</td>
-              <td style="padding:.5rem">${u.role === "botanist" ? (u.approved ? "Approved" : "Pending") : "—"}</td>
-              <td style="padding:.5rem">
-                ${u.role === "botanist"
-                  ? `<button type="button" class="btn btn-outline-green" data-approve="${u.id}" style="margin-right:.5rem">Approve</button><button type="button" class="btn btn-ghost" data-reject="${u.id}">Reject</button>`
-                  : "—"
-                }
-              </td>
+              <th style="padding:.75rem 1rem">Name</th>
+              <th style="padding:.75rem 1rem">Email</th>
+              <th style="padding:.75rem 1rem">Role</th>
+              <th style="padding:.75rem 1rem">Status</th>
+              <th style="padding:.75rem 1rem">Actions</th>
             </tr>
-          `).join("")}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${users.map((u) => `
+              <tr>
+                <td style="padding:.75rem 1rem">${u.name}</td>
+                <td style="padding:.75rem 1rem">${u.email}</td>
+                <td style="padding:.75rem 1rem" class="table-role">${u.role}</td>
+                <td style="padding:.75rem 1rem">
+                  ${u.role === "botanist"
+                    ? `<span class="badge ${u.approved ? "badge-green" : "badge-orange"} table-status">${u.approved ? "Approved" : "Pending"}</span>`
+                    : '<span class="badge badge-blue table-status">Active</span>'
+                  }
+                </td>
+                <td style="padding:.75rem 1rem">
+                  ${u.role === "botanist"
+                    ? `<button type="button" class="btn btn-outline-green btn-sm" data-approve="${u.id}" style="margin-right:.5rem">Approve</button><button type="button" class="btn btn-ghost btn-sm" data-reject="${u.id}">Reject</button>`
+                    : "—"
+                  }
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
 
     container.querySelectorAll("[data-approve]").forEach((btn) => {

@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const { requireAuth } = require("../middleware/auth");
+const { calculateUpdatedBotanistRating } = require("../utils/reviewUtils");
 
 const router = express.Router();
 
@@ -97,12 +98,66 @@ router.get("/:id/messages", requireAuth, async (req, res) => {
       await db.consultations.updateStatus(consultation.id, "read");
     }
 
+    const otherUserId = consultation.toBotanistUserId === req.userId ? consultation.fromUserId : consultation.toBotanistUserId;
+    const otherUser = await db.users.findById(otherUserId);
+
     res.json({
-      consultation: { id: consultation.id, status: consultation.status },
+      consultation: {
+        id: consultation.id,
+        status: consultation.status,
+        canReview: consultation.fromUserId === req.userId && otherUser?.role === "botanist",
+      },
       messages: thread,
     });
   } catch (err) {
     res.status(500).json({ error: err.message || "Could not load messages." });
+  }
+});
+
+// POST /api/consultations/:id/review — allow a farmer to review a botanist after a conversation.
+router.post("/:id/review", requireAuth, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const numericRating = Number(rating);
+
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({ error: "A rating between 1 and 5 is required." });
+    }
+
+    const consultation = await db.consultations.findByIdForUser(req.params.id, req.userId);
+    if (!consultation) return res.status(404).json({ error: "Conversation not found." });
+    if (consultation.fromUserId !== req.userId) {
+      return res.status(403).json({ error: "Only the person who started the conversation can leave a review." });
+    }
+
+    const botanist = await db.users.findById(consultation.toBotanistUserId);
+    if (!botanist || botanist.role !== "botanist") {
+      return res.status(404).json({ error: "Botanist not found." });
+    }
+
+    const { rating: nextRating, reviews: nextReviews } = calculateUpdatedBotanistRating(
+      botanist.rating,
+      botanist.reviews,
+      numericRating
+    );
+
+    const updatedBotanist = await db.users.update(consultation.toBotanistUserId, {
+      rating: nextRating,
+      reviews: nextReviews,
+    });
+
+    if (updatedBotanist) {
+      await db.botanists.upsertForUser(updatedBotanist);
+    }
+
+    res.status(201).json({
+      success: true,
+      rating: nextRating,
+      reviews: nextReviews,
+      message: `Thanks for your ${numericRating}-star review${comment ? " and note" : ""}.`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Could not submit review." });
   }
 });
 
