@@ -6,8 +6,7 @@ const { calculateUpdatedBotanistRating } = require("../utils/reviewUtils");
 const router = express.Router();
 
 // Resolves the botanist card id format ("u-12") used on the Nearby
-// Botanists page into a real user id. Demo/seed botanists (plain numeric
-// ids like "3") have no real account and can't be messaged.
+// Botanists page into a real user id.
 function resolveBotanistUserId(botanistId) {
   const match = String(botanistId).match(/^u-(\d+)$/);
   if (match) return Number(match[1]);
@@ -26,7 +25,7 @@ router.post("/", requireAuth, async (req, res) => {
 
     const botanistUserId = resolveBotanistUserId(botanistId);
     if (!botanistUserId) {
-      return res.status(400).json({ error: "This botanist is a demo profile and can't receive messages yet." });
+      return res.status(400).json({ error: "Please select a real botanist account." });
     }
 
     const botanist = await db.users.findById(botanistUserId);

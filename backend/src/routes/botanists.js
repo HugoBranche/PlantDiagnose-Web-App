@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const { requireAuth } = require("../middleware/auth");
+const { filterRealBotanists } = require("../utils/botanistFiltering");
 
 const router = express.Router();
 
@@ -18,9 +19,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 // GET /api/botanists?search=&specialty=&sort=distance|rating|reviews&lat=&lng=
-// Reads directly from the `botanists` table, which now holds both the 6
-// demo/seed rows (userId: null) and real registered botanists (userId set),
-// kept in sync by PUT /me below.
+// Reads only from real botanist accounts and their synced public profile rows.
 router.get("/", async (req, res) => {
   try {
     const { search = "", specialty = "all", sort = "distance", lat, lng } = req.query;
@@ -28,9 +27,11 @@ router.get("/", async (req, res) => {
     let rows = await db.botanists.all();
     const botanistUsers = await db.users.findByRole("botanist");
 
+    rows = filterRealBotanists(rows, botanistUsers);
+
     const mergedByKey = new Map();
     rows.forEach((b) => {
-      const key = b.userId != null ? `user:${b.userId}` : `demo:${b.id}`;
+      const key = `user:${b.userId}`;
       mergedByKey.set(key, { ...b, specializations: Array.isArray(b.specializations) ? b.specializations : [] });
     });
 
@@ -80,13 +81,6 @@ router.get("/", async (req, res) => {
     });
 
     rows = Array.from(mergedByKey.values());
-
-    const visibleBotanistUserIds = new Set(
-      botanistUsers
-        .filter((user) => user.role === "botanist" && user.verified !== false)
-        .map((user) => Number(user.id))
-    );
-    rows = rows.filter((b) => b.userId == null || visibleBotanistUserIds.has(Number(b.userId)));
 
     const userLat = lat !== undefined ? parseFloat(lat) : null;
     const userLng = lng !== undefined ? parseFloat(lng) : null;

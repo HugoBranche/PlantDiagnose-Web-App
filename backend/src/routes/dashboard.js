@@ -17,7 +17,7 @@ function isWithinLastDays(dateValue, days) {
 router.get("/stats", requireAuth, async (req, res) => {
   try {
     const role = req.user?.role || "user";
-    const [rows, seedBotanists] = await Promise.all([
+    const [rows, botanists] = await Promise.all([
       db.diagnoses.findByUser(req.userId),
       db.botanists.all(),
     ]);
@@ -25,7 +25,7 @@ router.get("/stats", requireAuth, async (req, res) => {
     const total = rows.length;
     const healthy = rows.filter((d) => d.status === "Healthy").length;
     const diseased = rows.filter((d) => d.status === "Diseased").length;
-    const nearbyExperts = seedBotanists.length;
+    const nearbyExperts = botanists.length;
 
     const withConfidence = rows.filter((d) => typeof d.confidence === "number");
     const avgConfidence =
