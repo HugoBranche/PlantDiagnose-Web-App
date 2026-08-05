@@ -15,6 +15,33 @@ function toPublicUser(user) {
   return rest;
 }
 
+async function verifyGoogleIdToken(idToken) {
+  if (!idToken) {
+    throw new Error("Google ID token is required.");
+  }
+
+  const response = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Invalid Google ID token.");
+  }
+
+  const payload = await response.json();
+  const emailVerified = payload.email_verified === "true" || payload.email_verified === true;
+  if (!emailVerified) {
+    throw new Error("Google email is not verified.");
+  }
+
+  const expectedClientId = process.env.GOOGLE_CLIENT_ID;
+  if (expectedClientId && payload.aud !== expectedClientId) {
+    throw new Error("Google token audience mismatch.");
+  }
+
+  return payload;
+}
+
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   try {
@@ -65,7 +92,7 @@ router.post("/login", async (req, res) => {
 
     const user = await db.users.findByEmail(email);
     const fallbackPasswords = ["Password123!", "password123", "PlantDiagnose123!"];
-    const passwordMatches = !!user && bcrypt.compareSync(password, user.passwordHash);
+    const passwordMatches = !!user && user.passwordHash && bcrypt.compareSync(password, user.passwordHash);
     const seedPasswordMatches = !!user?.__source && fallbackPasswords.includes(password);
 
     if (!user || (!passwordMatches && !seedPasswordMatches)) {
@@ -75,6 +102,37 @@ router.post("/login", async (req, res) => {
     res.json({ token: signToken(user.id), user: toPublicUser(user) });
   } catch (err) {
     res.status(500).json({ error: err.message || "Login failed." });
+  }
+});
+
+// POST /api/auth/google
+router.post("/google", async (req, res) => {
+  try {
+    const { idToken, role = "user" } = req.body;
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ error: "Google login is not configured on the server." });
+    }
+
+    const googleUser = await verifyGoogleIdToken(idToken);
+    const email = googleUser.email?.toLowerCase();
+    if (!email) {
+      return res.status(400).json({ error: "Google account did not provide an email." });
+    }
+
+    let user = await db.users.findByEmail(email);
+    if (!user) {
+      const createRole = role === "botanist" ? "botanist" : "user";
+      user = await db.users.create({
+        name: googleUser.name || email.split("@")[0],
+        email,
+        passwordHash: null,
+        role: createRole,
+      });
+    }
+
+    res.json({ token: signToken(user.id), user: toPublicUser(user) });
+  } catch (err) {
+    res.status(401).json({ error: err.message || "Google sign-in failed." });
   }
 });
 

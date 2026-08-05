@@ -285,7 +285,7 @@ const users = {
         id: Number(nextId),
         name,
         email: email.toLowerCase(),
-        password_hash: passwordHash,
+        password_hash: passwordHash || null,
         role,
         specialty: role === "botanist" ? "" : null,
         specializations: [],
@@ -302,8 +302,8 @@ const users = {
     const row = {
       name,
       email: email.toLowerCase(),
-      password_hash: passwordHash,
       role,
+      ...(passwordHash !== undefined ? { password_hash: passwordHash } : {}),
       ...(isBotanist
         ? { specialty: "", specializations: [], experience_years: 0, verified: false, rating: 4.5, reviews: 0, profile_complete: false }
         : {}),
