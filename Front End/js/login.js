@@ -35,8 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  const GOOGLE_CLIENT_ID = "1025451121382-q8jhcnnsacv49su8vuodf9odgbbc9dco.apps.googleusercontent.com";
-
   async function handleAuth(form, submitBtn, loadingText, request) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -63,60 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
-  async function handleGoogleCredentialResponse(response) {
-    try {
-      const data = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: {
-          idToken: response.credential,
-        },
-      });
-      Auth.setToken(data.token);
-      Auth.setUser(data.user);
-      if (data.user.role === "admin") {
-        window.location.href = "admin.html";
-      } else if (data.user.role === "botanist" && !data.user.profileComplete) {
-        window.location.href = "botanist-profile.html";
-      } else {
-        window.location.href = "dashboard.html";
-      }
-    } catch (err) {
-      showError(err.message || "Google sign-in failed.");
-    }
-  }
-
-  function setupGoogleButton() {
-    const container = document.getElementById("googleSigninButtonContainer");
-    if (!container) {
-      return;
-    }
-
-    const tryInitialize = () => {
-      const google = window.google?.accounts?.id;
-      if (!google) {
-        window.setTimeout(tryInitialize, 200);
-        return;
-      }
-
-      google.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredentialResponse,
-      });
-
-      google.renderButton(container, {
-        theme: "outline",
-        size: "large",
-        width: "100%",
-        text: "signin_with",
-        shape: "rectangular",
-      });
-    };
-
-    tryInitialize();
-  }
-
-  setupGoogleButton();
 
   document.getElementById("adminSigninBtn")?.addEventListener("click", async () => {
     hideError();
@@ -163,32 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       })
   );
-
-  document.getElementById("googleSigninBtn")?.addEventListener("click", async () => {
-    hideError();
-    const submitBtn = document.getElementById("googleSigninBtn");
-    const original = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Signing in with Google...";
-
-    try {
-      const google = window.google?.accounts?.id;
-      if (!google) {
-        throw new Error("Google sign-in not available.");
-      }
-
-      google.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: (response) => handleGoogleCredentialResponse(response, submitBtn, original),
-      });
-
-      google.prompt();
-    } catch (err) {
-      showError(err.message || "Unable to sign in with Google.");
-      submitBtn.disabled = false;
-      submitBtn.textContent = original;
-    }
-  });
 
   handleAuth(
     document.getElementById("signupForm"),
